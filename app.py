@@ -6,11 +6,10 @@ st.set_page_config(page_title="BC TigerMath AI", page_icon="🐅", layout="cente
 st.title("🐅 BC TigerMath AI")
 st.caption("Your Campus BC Math Specialist | Powered by Groq (Free Tier)")
 
-# --- Sidebar: Secure API Key Input ---
+# --- Sidebar: Cleaned Up Layout ---
 with st.sidebar:
-    st.header("Configuration")
-    groq_key = st.text_input("Enter Groq API Key:", type="password", help="Grab yours for free at console.groq.com")
-    st.markdown("[Get a free Groq API Key](https://console.groq.com/)")
+    st.header("Control Panel")
+    st.info("The BC Math Specialist is fully authenticated and ready to assist!")
     
     st.write("---")
     if st.button("Reset Conversation", use_container_width=True):
@@ -42,15 +41,10 @@ SYSTEM_INSTRUCTION = (
 # --- Handle New User Interaction ---
 if user_query := st.chat_input("Ask a question..."):
     
-    if not groq_key:
-        st.error("Please provide your Groq API Key in the sidebar to send messages!")
-        st.stop()
-        
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.markdown(user_query)
         
-    # Format message history for Groq's SDK
     formatted_messages = [{"role": "system", "content": SYSTEM_INSTRUCTION}]
     for msg in st.session_state.messages:
         formatted_messages.append({"role": msg["role"], "content": msg["content"]})
@@ -60,10 +54,9 @@ if user_query := st.chat_input("Ask a question..."):
         full_response = ""
         
         try:
-            # Initialize official Groq client
-            client = Groq(api_key=groq_key)
+            # Fetches from your Streamlit Cloud Secrets management dashboard automatically
+            client = Groq(api_key=st.secrets["GROQ_API_KEY"])
             
-            # Using Llama 3.3 70B for strong mathematical reasoning
             response_stream = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=formatted_messages,
@@ -80,4 +73,5 @@ if user_query := st.chat_input("Ask a question..."):
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             
         except Exception as e:
-            st.error(f"An unexpected error occurred: {e}")
+            st.error(f"Authentication Error: The backend secret key is missing or improperly formatted.")
+            st.info("Technical details: " + str(e))
