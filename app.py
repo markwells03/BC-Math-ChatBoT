@@ -3,10 +3,50 @@ from groq import Groq
 
 # Page Styling - Customized for Benedict College
 st.set_page_config(page_title="BC TigerMath AI", page_icon="🐅", layout="centered")
+
+# --- 🎨 Custom CSS Injection: BC Purple & Tiger Gold Theme ---
+st.markdown("""
+    <style>
+    /* Title and Subtitle Styling */
+    h1 {
+        color: #FFD700 !important; /* Tiger Gold */
+        font-family: 'Arial Black', Gadget, sans-serif;
+    }
+    .stCaption {
+        color: #F0F2F6 !important;
+        font-style: italic;
+    }
+    
+    /* Custom Design for the Math Toolbar Buttons */
+    div.stButton > button {
+        background-color: #4C145E !important; /* BC Purple Background */
+        color: #FFD700 !important; /* Tiger Gold Text */
+        border: 2px solid #FFD700 !important;
+        border-radius: 8px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    div.stButton > button:hover {
+        background-color: #FFD700 !important; /* Invert on hover */
+        color: #4C145E !important;
+        border: 2px solid #4C145E !important;
+    }
+    
+    /* Accent lines and styling wrappers */
+    div[data-testid="stSidebar"] {
+        background-color: #1A1A1A;
+    }
+    div[data-testid="stChatInput"] {
+        border: 2px solid #4C145E !important;
+        border-radius: 12px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 st.title("🐅 BC TigerMath AI")
 st.caption("Your Campus BC Math Specialist | Powered by Groq (Free Tier)")
 
-# --- Sidebar: Cleaned Up Layout ---
+# --- Sidebar: Cleaned Up Control Panel ---
 with st.sidebar:
     st.header("Control Panel")
     st.info("The BC Math Specialist is fully authenticated and ready to assist!")
@@ -14,9 +54,10 @@ with st.sidebar:
     st.write("---")
     if st.button("Reset Conversation", use_container_width=True):
         st.session_state.messages = []
+        st.session_state.chat_bar = ""
         st.rerun()
 
-# --- Initialize Local Chat History ---
+# --- Initialize Local Chat History & Input Buffers ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
@@ -24,6 +65,22 @@ if "messages" not in st.session_state:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+
+# --- 🛠️ Interactive Math Input Helper Toolbar ---
+st.write("### 🛠️ Math Input Helper")
+st.markdown("📋 **Quick-Copy Symbols:** Highlight and copy these characters to paste into your input bar below:  \n`^` (Power) | `√` (Square Root) | `π` (Pi) | `θ` (Theta) | `×` (Multiply) | `÷` (Divide) | `∫` (Integral) | `Δ` (Delta)")
+
+# Horizontal layout for quick-launch question templates
+st.markdown("**Quick-Load Problem Starters:**")
+col1, col2, col3 = st.columns(3)
+if col1.button("📐 Exponent Problem", use_container_width=True):
+    st.session_state.chat_bar = "How do I simplify an expression with a power like x^3 * x^2?"
+if col2.button("🔍 Root Radical", use_container_width=True):
+    st.session_state.chat_bar = "Can you guide me through solving a radical problem like √32?"
+if col3.button("📈 Derivative Concept", use_container_width=True):
+    st.session_state.chat_bar = "I need help finding the derivative of a function."
+
+st.write("---")
 
 # --- Socratic Prompt Engine ---
 SYSTEM_INSTRUCTION = (
@@ -39,7 +96,8 @@ SYSTEM_INSTRUCTION = (
 )
 
 # --- Handle New User Interaction ---
-if user_query := st.chat_input("Ask a question..."):
+# Connecting the key="chat_bar" lets our toolbar programmatically update the field text instantly
+if user_query := st.chat_input("Ask a question...", key="chat_bar"):
     
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
@@ -54,7 +112,6 @@ if user_query := st.chat_input("Ask a question..."):
         full_response = ""
         
         try:
-            # Fetches from your Streamlit Cloud Secrets management dashboard automatically
             client = Groq(api_key=st.secrets["GROQ_API_KEY"])
             
             response_stream = client.chat.completions.create(
@@ -73,5 +130,5 @@ if user_query := st.chat_input("Ask a question..."):
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             
         except Exception as e:
-            st.error(f"Authentication Error: The backend secret key is missing or improperly formatted.")
+            st.error(f"Authentication or API Error. Please check your system configuration.")
             st.info("Technical details: " + str(e))
