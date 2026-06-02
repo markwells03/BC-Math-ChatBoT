@@ -44,7 +44,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("🐅 BC TigerMath AI")
-st.caption("Your Campus BC Math Specialist | Powered by Groq (Free Tier)")
+st.caption("Your Campus BC Math Specialist | Created by Mark Wells and Jamazio Mcphee")
 
 # --- Sidebar: Cleaned Up Control Panel ---
 with st.sidebar:
