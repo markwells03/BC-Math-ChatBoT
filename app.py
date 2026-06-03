@@ -1,5 +1,6 @@
 import streamlit as st
 from groq import Groq
+from docx import Document
 
 # Page Styling - Customized for Benedict College
 st.set_page_config(page_title="BC TigerMath AI", page_icon="🐅", layout="centered")
@@ -177,3 +178,29 @@ if user_query := st.chat_input("Ask a question...", key="chat_bar"):
         except Exception as e:
             st.error(f"Authentication or API Error. Please check your system configuration.")
             st.info("Technical details: " + str(e))
+
+
+
+# --------------------------
+# Load Benedict Knowledge
+# --------------------------
+
+def load_benedict_doc(path="benedict_info.docx"):
+
+    try:
+        doc = Document(path)
+
+        text = []
+
+        for paragraph in doc.paragraphs:
+            if paragraph.text.strip():
+                text.append(paragraph.text)
+
+        return "\n".join(text)
+
+    except Exception:
+        return ""
+
+
+BENEDICT_KNOWLEDGE = load_benedict_doc()
+```
