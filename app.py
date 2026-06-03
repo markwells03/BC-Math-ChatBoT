@@ -72,18 +72,18 @@ st.markdown("📋 **Quick-Copy Symbols:** Highlight and copy these characters to
 
 # Horizontal layout for quick-launch question templates
 st.markdown("**Quick-Load Problem Starters:**")
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 if col1.button("📐 Exponent Problem", use_container_width=True):
     st.session_state.chat_bar = "How do I simplify an expression with a power like x^3 * x^2?"
 if col2.button("🔍 Root Radical", use_container_width=True):
     st.session_state.chat_bar = "Can you guide me through solving a radical problem like √32?"
 if col3.button("📈 Derivative Concept", use_container_width=True):
     st.session_state.chat_bar = "I need help finding the derivative of a function."
+if col4.button("🐾 BC History", use_container_width=True):
+    st.session_state.chat_bar = "When was Benedict College founded and what are the school colors?"
 
 st.write("---")
 
-# --- Socratic Prompt Engine ---
-SYSTEM_INSTRUCTION = (
 # --- Socratic Prompt Engine ---
 SYSTEM_INSTRUCTION = (
     "You are 'BC TigerMath AI', a strict Socratic mathematics tutor and the premier BC Math Specialist at Benedict College. "
