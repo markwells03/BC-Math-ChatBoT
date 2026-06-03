@@ -181,26 +181,99 @@ if user_query := st.chat_input("Ask a question...", key="chat_bar"):
 
 
 
+```python
+from docx import Document
+
+
 # --------------------------
-# Load Benedict Knowledge
+# Load Benedict Data
 # --------------------------
 
 def load_benedict_doc(path="benedict_info.docx"):
 
-    try:
-        doc = Document(path)
+    doc = Document(path)
 
-        text = []
+    lines = []
 
-        for paragraph in doc.paragraphs:
-            if paragraph.text.strip():
-                text.append(paragraph.text)
+    for p in doc.paragraphs:
+        text = p.text.strip()
 
-        return "\n".join(text)
+        if text:
+            lines.append(text)
 
-    except Exception:
-        return ""
+    return lines
 
 
-BENEDICT_KNOWLEDGE = load_benedict_doc()
+BENEDICT_DATA = load_benedict_doc()
+
+
+# --------------------------
+# Search Benedict Data
+# --------------------------
+
+def search_benedict(query):
+
+    query = query.lower()
+
+    matches = []
+
+    for line in BENEDICT_DATA:
+
+        if any(word in line.lower() for word in query.split()):
+
+            matches.append(line)
+
+    return "\n".join(matches[:20])
+
+
+# --------------------------
+# Build System Prompt
+# --------------------------
+
+formatted_messages = []
+
+context = ""
+
+if any(word in user_query.lower() for word in [
+    "benedict",
+    "admissions",
+    "financial aid",
+    "campus police",
+    "president",
+    "housing",
+    "registrar",
+    "email",
+    "phone",
+    "contact"
+]):
+
+    context = search_benedict(user_query)
+
+
+system_message = SYSTEM_INSTRUCTION
+
+if context:
+
+    system_message += f"""
+
+VERIFIED BENEDICT RECORDS
+
+CRITICAL:
+Only answer using the verified records above.
+If the information is missing, say:
+'I don't see that in my Benedict records.'
+
+Never invent phone numbers.
+Never estimate emails.
+Never guess.
+"""
+
+
+formatted_messages.append({
+    "role": "system",
+    "content": system_message
+})
+
+for msg in st.session_state.messages:
+    formatted_messages.append(msg)
 ```
