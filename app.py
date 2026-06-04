@@ -102,6 +102,68 @@ SYSTEM_INSTRUCTION = (
     "  5. Only confirm the final answer after they have calculated it themselves."
 )
 
+```python
+# --------------------------
+# BENEDICT DOCUMENT LOADER
+# --------------------------
+
+def load_benedict_doc():
+
+    try:
+
+        doc = Document("benedict_info.docx")
+
+        sections = []
+
+        current = []
+
+        for p in doc.paragraphs:
+
+            text = p.text.strip()
+
+            if text:
+
+                current.append(text)
+
+            else:
+
+                if current:
+                    sections.append("\n".join(current))
+                    current = []
+
+        if current:
+            sections.append("\n".join(current))
+
+        return sections
+
+    except:
+        return []
+
+
+BENEDICT_RECORDS = load_benedict_doc()
+
+
+def get_benedict_info(query):
+
+    query = query.lower()
+
+    matches = []
+
+    for section in BENEDICT_RECORDS:
+
+        score = 0
+
+        for word in query.split():
+
+            if word in section.lower():
+                score += 1
+
+        if score >= 2:
+            matches.append(section)
+
+    return "\n\n".join(matches[:3])
+```
+
 # --- Handle New User Interaction ---
 # Connecting the key="chat_bar" lets our toolbar programmatically update the field text instantly
 if user_query := st.chat_input("Ask a question...", key="chat_bar"):
