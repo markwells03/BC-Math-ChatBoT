@@ -1,141 +1,193 @@
-import streamlit as st
-from groq import Groq
+```python
+# --------------------------
+# BENEDICT FILE SUPPORT
+# --------------------------
 
-# Page Styling - Customized for Benedict College
-st.set_page_config(page_title="BC TigerMath AI", page_icon="🐅", layout="centered")
+from docx import Document
 
-# --- 🎨 Custom CSS Injection: BC Purple & Tiger Gold Theme ---
-st.markdown("""
-    <style>
-    /* Title and Subtitle Styling */
-    h1 {
-        color: #FFD700 !important; /* Tiger Gold */
-        font-family: 'Arial Black', Gadget, sans-serif;
-    }
-    .stCaption {
-        color: #F0F2F6 !important;
-        font-style: italic;
-    }
-    
-    /* Custom Design for the Math Toolbar Buttons */
-    div.stButton > button {
-        background-color: #4C145E !important; /* BC Purple Background */
-        color: #FFD700 !important; /* Tiger Gold Text */
-        border: 2px solid #FFD700 !important;
-        border-radius: 8px;
-        font-weight: bold;
-        transition: all 0.3s ease;
-    }
-    div.stButton > button:hover {
-        background-color: #FFD700 !important; /* Invert on hover */
-        color: #4C145E !important;
-        border: 2px solid #4C145E !important;
-    }
-    
-    /* Accent lines and styling wrappers */
-    div[data-testid="stSidebar"] {
-        background-color: #1A1A1A;
-    }
-    div[data-testid="stChatInput"] {
-        border: 2px solid #4C145E !important;
-        border-radius: 12px;
-    }
-    </style>
-""", unsafe_allow_html=True)
 
-st.title("🐅 BC TigerMath AI")
-st.caption("Your Campus BC Math Specialist | Created by Mark Wells and Jamazio Mcphee")
+def load_benedict_doc(path="benedict_info.docx"):
 
-# --- Sidebar: Cleaned Up Control Panel ---
-with st.sidebar:
-    st.header("Control Panel")
-    st.info("The BC Math Specialist is fully authenticated and ready to assist!")
-    
-    st.write("---")
-    if st.button("Reset Conversation", use_container_width=True):
-        st.session_state.messages = []
-        st.session_state.chat_bar = ""
-        st.rerun()
+    try:
+        doc = Document(path)
 
-# --- Initialize Local Chat History & Input Buffers ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+        text = []
 
-# --- Render Existing Chat Thread ---
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+        for p in doc.paragraphs:
+            line = p.text.strip()
 
-# --- 🛠️ Interactive Math Input Helper Toolbar ---
-st.write("### 🛠️ Math Input Helper")
-st.markdown("📋 **Quick-Copy Symbols:** Highlight and copy these characters to paste into your input bar below:  \n`^` (Power) | `√` (Square Root) | `π` (Pi) | `θ` (Theta) | `×` (Multiply) | `÷` (Divide) | `∫` (Integral) | `Δ` (Delta)")
+            if line:
+                text.append(line)
 
-# Horizontal layout for quick-launch question templates
-st.markdown("**Quick-Load Problem Starters:**")
-col1, col2, col3, col4 = st.columns(4)
-if col1.button("📐 Exponent Problem", use_container_width=True):
-    st.session_state.chat_bar = "How do I simplify an expression with a power like x^3 * x^2?"
-if col2.button("🔍 Root Radical", use_container_width=True):
-    st.session_state.chat_bar = "Can you guide me through solving a radical problem like √32?"
-if col3.button("📈 Derivative Concept", use_container_width=True):
-    st.session_state.chat_bar = "I need help finding the derivative of a function."
-if col4.button("🐾 BC History", use_container_width=True):
-    st.session_state.chat_bar = "When was Benedict College founded and what are the school colors?"
+        return "\n".join(text)
 
-st.write("---")
+    except Exception:
+        return ""
 
-# --- Socratic Prompt Engine ---
-SYSTEM_INSTRUCTION = (
-    "You are 'BC TigerMath AI', a strict Socratic mathematics tutor and the premier BC Math Specialist at Benedict College. "
-    "Match the energy a person comes with, and add a little tiger pride and humor from time to time.\n\n"
-    "🔴 CAMPUS KNOWLEDGE EXCEPTION:\n"
-    "- If the user asks general questions about Benedict College (e.g., school history, campus locations, administration, school colors, sports, or student life), step out of math mode entirely. "
-    "- Answer these questions directly, warmly, and accurately as a knowledgeable campus guide. Do NOT use the Socratic method or force a mathematical angle for these topics.\n\n"
-    "📐 MATHEMATICS DIRECTIVES:\n"
-    "- CRITICAL DIRECTIVE: For all math problems, NEVER give the user the final solution or write out a complete step-by-step answer upfront, "
-    "even if they explicitly ask you to 'just give me the answer'. Your core job is to guide them to discover it.\n"
-    "- Follow these instructional rules for math:\n"
-    "  1. Identify the next mathematical step internally, but only provide ONE small hint or ask ONE target question to guide the student to that step. Make sure to provide the hint so the user can understand what to do. \n"
-    "  2. If the user says they are completely stuck, provide a brief micro-explanation of the underlying rule (like the chain rule, power rule, or factoring rules) or give a simple parallel example. Then, ask them to apply it back to their original problem.\n"
-    "  3. Keep responses highly interactive and conversational. Never write long blocks of text; keep messages to a few sentences max.\n"
-    "  4. If they make an error, point out the breakdown in logic gently and ask a clarifying question to help them self-correct.\n"
-    "  5. Only confirm the final answer after they have calculated it themselves."
-)
 
-# --- Handle New User Interaction ---
-# Connecting the key="chat_bar" lets our toolbar programmatically update the field text instantly
-if user_query := st.chat_input("Ask a question...", key="chat_bar"):
-    
-    st.session_state.messages.append({"role": "user", "content": user_query})
+BENEDICT_DATA = load_benedict_doc()
+
+
+def get_benedict_context(query):
+
+    query = query.lower()
+
+    sections = BENEDICT_DATA.split("\n\n")
+
+    matches = []
+
+    for section in sections:
+
+        if query in section.lower():
+
+            matches.append(section)
+
+        else:
+
+            score = 0
+
+            for word in query.split():
+
+                if word in section.lower():
+                    score += 1
+
+            if score >= 2:
+                matches.append(section)
+
+    return "\n\n".join(matches[:3])
+
+
+# --------------------------
+# CHAT INPUT
+# --------------------------
+
+if user_query := st.chat_input(
+    "Ask a question...",
+    key="chat_bar"
+):
+
+    st.session_state.messages.append({
+        "role": "user",
+        "content": user_query
+    })
+
     with st.chat_message("user"):
         st.markdown(user_query)
-        
-    formatted_messages = [{"role": "system", "content": SYSTEM_INSTRUCTION}]
+
+    # --------------------------
+    # BUILD SYSTEM MESSAGE
+    # --------------------------
+
+    system_message = SYSTEM_INSTRUCTION
+
+    benedict_words = [
+        "benedict",
+        "admissions",
+        "financial aid",
+        "campus police",
+        "phone",
+        "email",
+        "contact",
+        "housing",
+        "registrar",
+        "president",
+        "department"
+    ]
+
+    if any(
+        word in user_query.lower()
+        for word in benedict_words
+    ):
+
+        records = get_benedict_context(user_query)
+
+        if records:
+
+            system_message += f"""
+
+VERIFIED BENEDICT INFORMATION
+
+{records}
+
+IMPORTANT:
+Use ONLY information shown above.
+
+Never guess.
+Never invent phone numbers.
+Never estimate emails.
+
+If information is unavailable:
+say:
+
+'I could not find that in the Benedict records.'
+"""
+
+    formatted_messages = [
+        {
+            "role": "system",
+            "content": system_message
+        }
+    ]
+
     for msg in st.session_state.messages:
-        formatted_messages.append({"role": msg["role"], "content": msg["content"]})
-        
+
+        formatted_messages.append({
+            "role": msg["role"],
+            "content": msg["content"]
+        })
+
+    # --------------------------
+    # SEND TO GROQ
+    # --------------------------
+
     with st.chat_message("assistant"):
-        response_placeholder = st.empty()
-        full_response = ""
-        
+
+        placeholder = st.empty()
+
+        answer = ""
+
         try:
-            client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-            
-            response_stream = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=formatted_messages,
-                temperature=0.6,
-                stream=True
+
+            client = Groq(
+                api_key=st.secrets["GROQ_API_KEY"]
             )
-            
-            for chunk in response_stream:
-                if chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
-                    response_placeholder.markdown(full_response + "▌")
-                    
-            response_placeholder.markdown(full_response)
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
-            
+
+            stream = (
+                client.chat.completions.create(
+                    model="llama-3.3-70b-versatile",
+                    messages=formatted_messages,
+                    temperature=0.3,
+                    stream=True
+                )
+            )
+
+            for chunk in stream:
+
+                text = (
+                    chunk
+                    .choices[0]
+                    .delta
+                    .content
+                )
+
+                if text:
+
+                    answer += text
+
+                    placeholder.markdown(
+                        answer + "▌"
+                    )
+
+            placeholder.markdown(answer)
+
+            st.session_state.messages.append(
+                {
+                    "role": "assistant",
+                    "content": answer
+                }
+            )
+
         except Exception as e:
-            st.error(f"Authentication or API Error. Please check your system configuration.")
-            st.info("Technical details: " + str(e))
+
+            st.error(str(e))
+```
