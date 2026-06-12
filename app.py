@@ -54,7 +54,8 @@ with st.sidebar:
     st.write("---")
     if st.button("Reset Conversation", use_container_width=True):
         st.session_state.messages = []
-        st.session_state.chat_bar = ""
+        if "chat_bar" in st.session_state:
+            st.session_state.chat_bar = ""
         st.rerun()
 
 # --- Initialize Local Chat History & Input Buffers ---
@@ -66,21 +67,65 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 🛠️ Interactive Math Input Helper Toolbar ---
-st.write("### 🛠️ Math Input Helper")
-st.markdown("📋 **Quick-Copy Symbols:** Highlight and copy these characters to paste into your input bar below:  \n`^` (Power) | `√` (Square Root) | `π` (Pi) | `θ` (Theta) | `×` (Multiply) | `÷` (Divide) | `∫` (Integral) | `Δ` (Delta)")
+# --- 🧮 Interactive Math Keyboard (Cengage-Style) ---
+st.write("### 🧮 Math Equation Builder")
+st.caption("Build your expression using the tabs below, then copy it into the chat bar!")
 
-# Horizontal layout for quick-launch question templates
+# 1. Setup the session state for our equation builder
+if "equation_draft" not in st.session_state:
+    st.session_state.equation_draft = ""
+
+# 2. Callbacks to modify the text input programmatically
+def add_symbol(sym):
+    st.session_state.equation_draft += sym
+
+def clear_equation():
+    st.session_state.equation_draft = ""
+
+# 3. Render the Composer Input Box and a Clear button
+draft_col, clear_col = st.columns([5, 1])
+with draft_col:
+    # Tying the text_input to 'equation_draft' syncs it perfectly with the buttons
+    st.text_input("Equation Composer:", key="equation_draft", label_visibility="collapsed")
+with clear_col:
+    st.button("Clear ❌", on_click=clear_equation, use_container_width=True)
+
+# 4. Math Level Tabs (Breaking the "Calculus-Only" Perception)
+math_tabs = st.tabs(["➕ Algebra", "📈 Calculus", "📊 Statistics", "📐 Trig & Sets"])
+
+# Helper function to generate clean button grids
+def render_symbol_grid(symbols, prefix):
+    cols = st.columns(8)
+    for i, sym in enumerate(symbols):
+        with cols[i % 8]:
+            st.button(sym, key=f"{prefix}_sym_{i}", on_click=add_symbol, args=(sym,), use_container_width=True)
+
+with math_tabs[0]: # Algebra & Basic Math
+    render_symbol_grid(['+', '-', '×', '÷', '=', '≠', 'x²', 'x³', 'xⁿ', '√', '∛', '()', '[]', '|x|', '∞', '½'], "alg")
+
+with math_tabs[1]: # Calculus
+    render_symbol_grid(['∫', '∬', '∭', '∮', '∂', 'd/dx', 'lim', '∑', '∏', 'Δ', '∇', 'e', 'ln', 'log', 'dx', 'dy'], "calc")
+
+with math_tabs[2]: # Statistics
+    render_symbol_grid(['μ', 'σ', 'σ²', 'x̄', 'p̂', 'χ²', 'ρ', 'Z', 'T', 'P()', 'E()', 'Var()', '∩', '∪', '!', '≈'], "stat")
+
+with math_tabs[3]: # Trig & Sets
+    render_symbol_grid(['π', 'θ', 'α', 'β', 'γ', 'sin', 'cos', 'tan', '∈', '∉', '⊂', '⊆', 'Ø', '°', '∠', '△'], "trig")
+
+st.write("---")
+
+# --- 🚀 Quick-Load Problem Starters (All Math Levels) ---
 st.markdown("**Quick-Load Problem Starters:**")
 col1, col2, col3, col4 = st.columns(4)
-if col1.button("📐 Exponent Problem", use_container_width=True):
-    st.session_state.chat_bar = "How do I simplify an expression with a power like x^3 * x^2?"
-if col2.button("🔍 Root Radical", use_container_width=True):
-    st.session_state.chat_bar = "Can you guide me through solving a radical problem like √32?"
-if col3.button("📈 Derivative Concept", use_container_width=True):
-    st.session_state.chat_bar = "I need help finding the derivative of a function."
-if col4.button("🐾 BC History", use_container_width=True):
-    st.session_state.chat_bar = "When was Benedict College founded and what are the school colors?"
+
+if col1.button("➕ Algebra Setup", use_container_width=True):
+    st.session_state.chat_bar = "How do I solve a quadratic equation like x² - 5x + 6 = 0?"
+if col2.button("📐 Pre-Calc Help", use_container_width=True):
+    st.session_state.chat_bar = "Can you help me find the exact value of sin(π/3)?"
+if col3.button("📈 Calculus Rules", use_container_width=True):
+    st.session_state.chat_bar = "I need help finding the derivative of f(x) = x² * e^x."
+if col4.button("📊 Stats & Data", use_container_width=True):
+    st.session_state.chat_bar = "How do I calculate the standard deviation or z-score of a dataset?"
 
 st.write("---")
 
@@ -92,7 +137,6 @@ except FileNotFoundError:
     campus_knowledge_base = "No supplementary historical documents found in the root directory."
 
 # --- Socratic Prompt Engine ---
-# Notice the 'f' before the quotes here. This turns it into an f-string so Python can read the {campus_knowledge_base} variable!
 SYSTEM_INSTRUCTION = f"""You are 'BC TigerMath AI', a strict Socratic mathematics tutor and the premier BC Math Specialist at Benedict College. Match the energy a person comes with, and add a little tiger pride and humor from time to time.
 
 🔴 CAMPUS KNOWLEDGE EXCEPTION:
@@ -113,7 +157,6 @@ SYSTEM_INSTRUCTION = f"""You are 'BC TigerMath AI', a strict Socratic mathematic
 """
 
 # --- Handle New User Interaction ---
-# Connecting the key="chat_bar" lets our toolbar programmatically update the field text instantly
 if user_query := st.chat_input("Ask a question...", key="chat_bar"):
     
     st.session_state.messages.append({"role": "user", "content": user_query})
