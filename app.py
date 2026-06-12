@@ -74,21 +74,19 @@ with st.sidebar:
     st.header("Control Panel")
 
     st.info(
-        "BC Math Specialist Ready"
+        "The BC Math Specialist is fully authenticated and ready to assist!"
     )
 
     st.write("---")
 
-    language=st.radio(
-
-        "🌍 Language",
-
+    # 🌍 MULTI LANGUAGE BUTTON
+    language = st.radio(
+        "🌍 Choose Language",
         [
             "English",
             "Español",
             "Français"
         ]
-
     )
 
     st.write("---")
@@ -97,11 +95,8 @@ with st.sidebar:
         "Reset Conversation",
         use_container_width=True
     ):
-
-        st.session_state.messages=[]
-
-        st.session_state.chat_bar=""
-
+        st.session_state.messages = []
+        st.session_state.chat_bar = ""
         st.rerun()
 
 # =====================================
@@ -270,6 +265,19 @@ if col3.button(
     "Help find derivative"
 )
 
+LANGUAGE_PROMPT = {
+
+"English":
+"Respond entirely in English.",
+
+"Español":
+"Respond entirely in Spanish.",
+
+"Français":
+"Respond entirely in French."
+
+}
+
 # =====================================
 # SYSTEM PROMPT
 # =====================================
@@ -405,20 +413,21 @@ key="chat_bar"
 
         )
 
-    formatted_messages=[
+formatted_messages = [
 
-        {
+{
+"role":"system",
 
-        "role":
-        "system",
+"content":
+SYSTEM_INSTRUCTION
++
+"\n\n"
++
+LANGUAGE_PROMPT[language]
 
-        "content":
-        final_prompt
+}
 
-        }
-
-    ]
-
+]
     formatted_messages.extend(
         st.session_state.messages
     )
