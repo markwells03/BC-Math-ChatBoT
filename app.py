@@ -43,12 +43,31 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.title("🐅 BC TigerMath AI")
-st.caption("Your Campus BC Math Specialist | Created by Mark Wells and Jamazio Mcphee")
+# =====================================
+# LANGUAGE CONFIGURATIONS
+# =====================================
+captions = {
+    "English": "Your Campus BC Math Specialist | Created by Mark Wells and Jamazio Mcphee",
+    "Español": "Tu Especialista Matemático BC | Creado por Mark Wells y Jamazio Mcphee",
+    "Français": "Votre spécialiste mathématique BC | Créé par Mark Wells et Jamazio Mcphee"
+}
 
-# --- Initialize Local Chat History & Input Buffers ---
+LANGUAGE_PROMPT = {
+    "English": "You MUST respond ONLY in English.",
+    "Español": "Debes responder ÚNICAMENTE en español.",
+    "Français": "Vous devez répondre UNIQUEMENT en français."
+} 
+
+# --- Initialize Local Chat History, Language & Input Buffers ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
+
+if "language" not in st.session_state:
+    st.session_state.language = "English"
+
+# Dynamic header caption based on selected language
+st.title("🐅 BC TigerMath AI")
+st.caption(captions[st.session_state.language])
 
 # --- Sidebar: Equation Builder & Control Panel ---
 with st.sidebar:
@@ -69,15 +88,14 @@ with st.sidebar:
     # 3. Render the Composer Input Box and a Clear button
     draft_col, clear_col = st.columns([4, 1])
     with draft_col:
-        # Tying the text_input to 'equation_draft' syncs it perfectly with the buttons
         st.text_input("Equation Composer:", key="equation_draft", label_visibility="collapsed")
     with clear_col:
         st.button("❌", on_click=clear_equation, use_container_width=True)
 
-    # 4. Math Level Tabs (Shortened titles to fit sidebar)
+    # 4. Math Level Tabs
     math_tabs = st.tabs(["➕ Alg", "📈 Calc", "📊 Stat", "📐 Trig"])
 
-    # Helper function to generate clean button grids (Adjusted to 4 columns for narrower sidebar)
+    # Helper function to generate clean button grids
     def render_symbol_grid(symbols, prefix):
         cols = st.columns(4)
         for i, sym in enumerate(symbols):
@@ -98,10 +116,18 @@ with st.sidebar:
 
     st.write("---")
     
-    # Standard Control Panel moved to bottom of sidebar
+    # --- Control Panel & Language Configuration ---
     st.header("Control Panel")
     st.info("The BC Math Specialist is fully authenticated and ready to assist!")
     
+    st.radio(
+        "🌍 Choose Language",
+        ["English", "Español", "Français"],
+        key="language"
+    )
+    st.success(f"Current Language: {st.session_state.language}")
+    
+    st.write("---")
     if st.button("Reset Conversation", use_container_width=True):
         st.session_state.messages = []
         if "chat_bar" in st.session_state:
@@ -136,58 +162,5 @@ except FileNotFoundError:
     campus_knowledge_base = "No supplementary historical documents found in the root directory."
 
 # --- Socratic Prompt Engine ---
-SYSTEM_INSTRUCTION = f"""You are 'BC TigerMath AI', a strict Socratic mathematics tutor and the premier BC Math Specialist at Benedict College. Match the energy a person comes with, and add a little tiger pride and humor from time to time.
-
-🔴 CAMPUS KNOWLEDGE EXCEPTION:
-- If the user asks general questions about Benedict College (e.g., its history, campus locations, admissions, programs, or student life), step out of math mode entirely.
-- Answer these questions directly, warmly, and accurately using ONLY the information provided in the VERIFIED CAMPUS DATA below. Do NOT use the Socratic method or force a mathematical angle for these topics.
-
-📋 VERIFIED CAMPUS DATA FROM REPOSITORY:
-{campus_knowledge_base}
-
-📐 MATHEMATICS DIRECTIVES:
-- CRITICAL DIRECTIVE: For all math problems, NEVER give the user the final solution or write out a complete step-by-step answer upfront, even if they explicitly ask you to 'just give me the answer'. Your core job is to guide them to discover it.
-- Follow these instructional rules for math:
-  1. Identify the next mathematical step internally, but only provide ONE small hint or ask ONE target question to guide the student to that step. Make sure to provide the hint so the user can understand what to do. 
-  2. If the user says they are completely stuck, provide a brief micro-explanation of the underlying rule (like the chain rule, power rule, or factoring rules) or give a simple parallel example. Then, ask them to apply it back to their original problem.
-  3. Keep responses highly interactive and conversational. Never write long blocks of text; keep messages to a few sentences max.
-  4. If they make an error, point out the breakdown in logic gently and ask a clarifying question to help them self-correct.
-  5. Only confirm the final answer after they have calculated it themselves.
-"""
-
-# --- Handle New User Interaction ---
-if user_query := st.chat_input("Ask a question...", key="chat_bar"):
-    
-    st.session_state.messages.append({"role": "user", "content": user_query})
-    with st.chat_message("user"):
-        st.markdown(user_query)
-        
-    formatted_messages = [{"role": "system", "content": SYSTEM_INSTRUCTION}]
-    for msg in st.session_state.messages:
-        formatted_messages.append({"role": msg["role"], "content": msg["content"]})
-        
-    with st.chat_message("assistant"):
-        response_placeholder = st.empty()
-        full_response = ""
-        
-        try:
-            client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-            
-            response_stream = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=formatted_messages,
-                temperature=0.6,
-                stream=True
-            )
-            
-            for chunk in response_stream:
-                if chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
-                    response_placeholder.markdown(full_response + "▌")
-                    
-            response_placeholder.markdown(full_response)
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
-            
-        except Exception as e:
-            st.error(f"Authentication or API Error. Please check your system configuration.")
-            st.info("Technical details: " + str(e))
+selected_lang = st.session_state.language
+SYSTEM_INSTRUCTION = f"""You are 'BC TigerMath AI', a strict Socratic
