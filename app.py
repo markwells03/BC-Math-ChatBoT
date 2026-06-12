@@ -127,40 +127,4 @@ with st.sidebar:
     )
     st.success(f"Current Language: {st.session_state.language}")
     
-    st.write("---")
-    if st.button("Reset Conversation", use_container_width=True):
-        st.session_state.messages = []
-        if "chat_bar" in st.session_state:
-            st.session_state.chat_bar = ""
-        st.rerun()
-
-# --- Render Existing Chat Thread ---
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# --- 🚀 Quick-Load Problem Starters (All Math Levels) ---
-st.markdown("**Quick-Load Problem Starters:**")
-col1, col2, col3, col4 = st.columns(4)
-
-if col1.button("➕ Algebra Setup", use_container_width=True):
-    st.session_state.chat_bar = "How do I solve a quadratic equation like x² - 5x + 6 = 0?"
-if col2.button("📐 Pre-Calc Help", use_container_width=True):
-    st.session_state.chat_bar = "Can you help me find the exact value of sin(π/3)?"
-if col3.button("📈 Calculus Rules", use_container_width=True):
-    st.session_state.chat_bar = "I need help finding the derivative of f(x) = x² * e^x."
-if col4.button("📊 Stats & Data", use_container_width=True):
-    st.session_state.chat_bar = "How do I calculate the standard deviation or z-score of a dataset?"
-
-st.write("---")
-
-# --- 📁 Load Custom Campus Information ---
-try:
-    with open("benedict_info.txt", "r", encoding="utf-8") as file:
-        campus_knowledge_base = file.read()
-except FileNotFoundError:
-    campus_knowledge_base = "No supplementary historical documents found in the root directory."
-
-# --- Socratic Prompt Engine ---
-selected_lang = st.session_state.language
-SYSTEM_INSTRUCTION = f"""You are 'BC TigerMath AI', a strict Socratic
+    st.write
