@@ -116,19 +116,6 @@ captions={
 
 }
 
-language_prompt={
-
-"English":
-"Respond only in English.",
-
-"Español":
-"Respond only in Spanish.",
-
-"Français":
-"Respond only in French."
-
-}
-
 # =====================================
 # TITLE
 # =====================================
@@ -413,21 +400,19 @@ key="chat_bar"
 
         )
 
-formatted_messages = [
 
-{
-"role":"system",
+    formatted_messages = [
 
-"content":
-SYSTEM_INSTRUCTION
-+
-"\n\n"
-+
-LANGUAGE_PROMPT[language]
+        {
 
-}
+            "role": "system",
 
-]
+            "content": final_prompt
+
+        }
+
+    ]
+
     formatted_messages.extend(
         st.session_state.messages
     )
