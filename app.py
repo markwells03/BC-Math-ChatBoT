@@ -2,278 +2,497 @@ import streamlit as st
 from groq import Groq
 from docx import Document
 
-# Page Styling - Customized for Benedict College
-st.set_page_config(page_title="BC TigerMath AI", page_icon="🐅", layout="centered")
+# ==========================================
+# PAGE CONFIG
+# ==========================================
 
-# --- 🎨 Custom CSS Injection: BC Purple & Tiger Gold Theme ---
+st.set_page_config(
+    page_title="BC TigerMath AI",
+    page_icon="🐅",
+    layout="centered"
+)
+
+# ==========================================
+# CUSTOM STYLING
+# ==========================================
+
 st.markdown("""
-    <style>
-    /* Title and Subtitle Styling */
-    h1 {
-        color: #FFD700 !important; /* Tiger Gold */
-        font-family: 'Arial Black', Gadget, sans-serif;
-    }
-    .stCaption {
-        color: #F0F2F6 !important;
-        font-style: italic;
-    }
-    
-    /* Custom Design for the Math Toolbar Buttons */
-    div.stButton > button {
-        background-color: #4C145E !important; /* BC Purple Background */
-        color: #FFD700 !important; /* Tiger Gold Text */
-        border: 2px solid #FFD700 !important;
-        border-radius: 8px;
-        font-weight: bold;
-        transition: all 0.3s ease;
-    }
-    div.stButton > button:hover {
-        background-color: #FFD700 !important; /* Invert on hover */
-        color: #4C145E !important;
-        border: 2px solid #4C145E !important;
-    }
-    
-    /* Accent lines and styling wrappers */
-    div[data-testid="stSidebar"] {
-        background-color: #1A1A1A;
-    }
-    div[data-testid="stChatInput"] {
-        border: 2px solid #4C145E !important;
-        border-radius: 12px;
-    }
-    </style>
+<style>
+
+h1{
+color:#FFD700!important;
+font-family:'Arial Black';
+}
+
+.stCaption{
+color:#F0F2F6!important;
+font-style:italic;
+}
+
+div.stButton > button{
+background:#4C145E!important;
+color:#FFD700!important;
+border:2px solid #FFD700!important;
+border-radius:8px;
+font-weight:bold;
+}
+
+div.stButton > button:hover{
+background:#FFD700!important;
+color:#4C145E!important;
+}
+
+div[data-testid="stSidebar"]{
+background:#1A1A1A;
+}
+
+div[data-testid="stChatInput"]{
+border:2px solid #4C145E!important;
+border-radius:12px;
+}
+
+</style>
 """, unsafe_allow_html=True)
 
-st.title("🐅 BC TigerMath AI")
-st.caption("Your Campus BC Math Specialist | Powered by Groq (Free Tier)")
+# ==========================================
+# HEADER
+# ==========================================
 
-# --- Sidebar: Cleaned Up Control Panel ---
+st.title("🐅 BC TigerMath AI")
+st.caption(
+"Your Campus BC Math Specialist | Powered by Groq"
+)
+
+# ==========================================
+# SIDEBAR
+# ==========================================
+
 with st.sidebar:
+
     st.header("Control Panel")
-    st.info("The BC Math Specialist is fully authenticated and ready to assist!")
-    
-    st.write("---")
-    if st.button("Reset Conversation", use_container_width=True):
-        st.session_state.messages = []
-        st.session_state.chat_bar = ""
+
+    st.success(
+        "BC Math Specialist Ready"
+    )
+
+    if st.button(
+        "Reset Conversation",
+        use_container_width=True
+    ):
+
+        st.session_state.messages=[]
+
         st.rerun()
 
-# --- Initialize Local Chat History & Input Buffers ---
+# ==========================================
+# SESSION STATE
+# ==========================================
+
 if "messages" not in st.session_state:
-    st.session_state.messages = []
+    st.session_state.messages=[]
 
-# --- Render Existing Chat Thread ---
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+if "chat_bar" not in st.session_state:
+    st.session_state.chat_bar=""
 
-# --- 🛠️ Interactive Math Input Helper Toolbar ---
-st.write("### 🛠️ Math Input Helper")
-st.markdown("📋 **Quick-Copy Symbols:** Highlight and copy these characters to paste into your input bar below:  \n`^` (Power) | `√` (Square Root) | `π` (Pi) | `θ` (Theta) | `×` (Multiply) | `÷` (Divide) | `∫` (Integral) | `Δ` (Delta)")
+# ==========================================
+# BENEDICT DOC SEARCH
+# ==========================================
 
-# Horizontal layout for quick-launch question templates
-st.markdown("**Quick-Load Problem Starters:**")
-col1, col2, col3 = st.columns(3)
-if col1.button("📐 Exponent Problem", use_container_width=True):
-    st.session_state.chat_bar = "How do I simplify an expression with a power like x^3 * x^2?"
-if col2.button("🔍 Root Radical", use_container_width=True):
-    st.session_state.chat_bar = "Can you guide me through solving a radical problem like √32?"
-if col3.button("📈 Derivative Concept", use_container_width=True):
-    st.session_state.chat_bar = "I need help finding the derivative of a function."
+def load_benedict_doc():
 
-st.write("---")
+    try:
 
-# --- Socratic Prompt Engine ---
-```python
-# --- Socratic Prompt Engine ---
-SYSTEM_INSTRUCTION = (
-    "You are 'BC TigerMath AI', a socratic mathematics tutor AND an informative tool for Benedict College information. "
+        doc=Document("benedict_info.docx")
 
-    "IMPORTANT EXCEPTION: If the user asks a question about Benedict College, "
-    "you must answer the question directly and completely. "
-    "Do NOT use the Socratic method for Benedict College questions. "
-    "Do NOT guide the user to discover the answer. "
-    "Do NOT ask follow-up teaching questions. "
-    "Simply provide the information requested.\n\n"
+        return [
+            p.text.strip()
+            for p in doc.paragraphs
+            if p.text.strip()
+        ]
 
+    except:
 
-    "Follow these instructional rules below for MATH QUESTIONS ONLY:\n"
+        return []
 
-    "1. When given a math problem, identify the rule being used and begin by showing:\n"
-    "   Rule Used:\n"
-    "   Formula:\n"
-    "   Why It Applies:\n"
-
-    "2. Then provide only ONE small hint or ask ONE target question to guide the student to the next step.\n"
-
-    "3. If the user says they are completely stuck, provide a brief micro-explanation of the underlying rule "
-    "(like the chain rule, power rule, or factoring rules) or give a simple parallel example. "
-    "Then ask them to apply it back to their original problem.\n"
-
-    "4. Keep responses highly interactive and conversational. Never write long blocks of text; "
-    "keep messages to a few sentences max.\n"
-
-    "5. If they make an error, point out the breakdown in logic gently and ask a clarifying question "
-    "to help them self-correct.\n"
-
-    "6. Only confirm the final answer after they have calculated it themselves.\n"
-
-    "7. Benedict College questions are NOT math questions. "
-    "Answer them directly and completely.\n"
-
-    "CRITICAL DIRECTIVE for Math: NEVER give the user the final solution for MATH questions or write out a complete step-by-step answer upfront, "
-    "even if they explicitly ask you to 'just give me the answer'. Your core job is to guide them to discover it.\n\n"
-
-
-    "Examples:\n"
-
-    "User: Who is the president of Benedict College?\n"
-    "Assistant: The president of Benedict College is Dr. Roslyn Clark Artis from 2017 to Now.\n\n"
-
-    "User: What year was Benedict College founded?\n"
-    "Assistant: Benedict College was founded in 1870.\n\n"
-
-    "User: Find the derivative of 2x^6 + 7x^5\n"
-    "Assistant: Rule Used: Power Rule. Formula: d/dx(x^n)=n*x^(n-1). "
-    "Why It Applies: Each term contains a variable raised to a power. "
-    "First Step: Apply the Power Rule to 2x^6. What happens to the exponent 6?"
-)
-```
-
-
-# --- Handle New User Interaction ---
-# Connecting the key="chat_bar" lets our toolbar programmatically update the field text instantly
-if user_query := st.chat_input("Ask a question...", key="chat_bar"):
-    
-    st.session_state.messages.append({"role": "user", "content": user_query})
-    with st.chat_message("user"):
-        st.markdown(user_query)
-        
-    formatted_messages = [{"role": "system", "content": SYSTEM_INSTRUCTION}]
-    for msg in st.session_state.messages:
-        formatted_messages.append({"role": msg["role"], "content": msg["content"]})
-        
-    with st.chat_message("assistant"):
-        response_placeholder = st.empty()
-        full_response = ""
-        
-        try:
-            client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-            
-            response_stream = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",
-                messages=formatted_messages,
-                temperature=0.6,
-                stream=True
-            )
-            
-            for chunk in response_stream:
-                if chunk.choices[0].delta.content:
-                    full_response += chunk.choices[0].delta.content
-                    response_placeholder.markdown(full_response + "▌")
-                    
-            response_placeholder.markdown(full_response)
-            st.session_state.messages.append({"role": "assistant", "content": full_response})
-            
-        except Exception as e:
-            st.error(f"Authentication or API Error. Please check your system configuration.")
-            st.info("Technical details: " + str(e))
-
-
-
-```python
-from docx import Document
-
-
-# --------------------------
-# Load Benedict Data
-# --------------------------
-
-def load_benedict_doc(path="benedict_info.docx"):
-
-    doc = Document(path)
-
-    lines = []
-
-    for p in doc.paragraphs:
-        text = p.text.strip()
-
-        if text:
-            lines.append(text)
-
-    return lines
-
-
-BENEDICT_DATA = load_benedict_doc()
-
-
-# --------------------------
-# Search Benedict Data
-# --------------------------
+BENEDICT_DATA=load_benedict_doc()
 
 def search_benedict(query):
 
-    query = query.lower()
-
-    matches = []
+    matches=[]
 
     for line in BENEDICT_DATA:
 
-        if any(word in line.lower() for word in query.split()):
+        if any(
+            word.lower()
+            in line.lower()
+
+            for word in query.split()
+        ):
 
             matches.append(line)
 
-    return "\n".join(matches[:20])
+    return "\n".join(matches[:15])
 
+# ==========================================
+# LEARNING RESOURCE ENGINE
+# ==========================================
 
-# --------------------------
-# Build System Prompt
-# --------------------------
+def get_learning_resources(text):
 
-formatted_messages = []
+    text=text.lower()
 
-context = ""
+    resources={
 
-if any(word in user_query.lower() for word in [
-    "benedict",
-    "admissions",
-    "financial aid",
-    "campus police",
-    "president",
-    "housing",
-    "registrar",
-    "email",
-    "phone",
-    "contact"
-]):
+        "trig":{
+            "video":
+            "https://www.youtube.com/watch?v=LwCRRUa8yTU",
 
-    context = search_benedict(user_query)
+            "site":
+            "https://www.khanacademy.org/math/trigonometry"
+        },
 
+        "derivative":{
+            "video":
+            "https://www.youtube.com/watch?v=ANyVpMS3HL4",
 
-system_message = SYSTEM_INSTRUCTION
+            "site":
+            "https://www.khanacademy.org/math/differential-calculus"
+        },
 
-if context:
+        "integral":{
+            "video":
+            "https://www.youtube.com/@ProfessorLeonard",
 
-    system_message += f"""
+            "site":
+            "https://www.khanacademy.org/math/integral-calculus"
+        },
 
-VERIFIED BENEDICT RECORDS
+        "algebra":{
+            "video":
+            "https://www.youtube.com/@TheOrganicChemistryTutor",
 
-CRITICAL:
-Only answer using the verified records above.
-If the information is missing, say:
+            "site":
+            "https://www.khanacademy.org/math/algebra"
+        },
+
+        "calculus":{
+            "video":
+            "https://www.youtube.com/@ProfessorLeonard",
+
+            "site":
+            "https://www.khanacademy.org/math/calculus-1"
+        }
+
+    }
+
+    for topic in resources:
+
+        if topic in text:
+
+            return resources[topic]
+
+    return None
+
+# ==========================================
+# SYSTEM PROMPT
+# ==========================================
+
+SYSTEM_INSTRUCTION="""
+
+You are BC TigerMath AI.
+
+ROLE 1:
+Socratic mathematics tutor.
+
+ROLE 2:
+Information assistant for Benedict College.
+
+BENEDICT RULE:
+If asked about Benedict College:
+
+Answer directly.
+
+Do not use Socratic teaching.
+
+Only use verified Benedict records.
+
+Never invent data.
+
+If unavailable say:
+
 'I don't see that in my Benedict records.'
 
-Never invent phone numbers.
-Never estimate emails.
-Never guess.
+MATH RULES:
+
+1.
+Show:
+
+Rule Used:
+
+Formula:
+
+Why It Applies:
+
+2.
+Give ONE hint.
+
+3.
+If stuck:
+Explain briefly.
+
+4.
+Keep answers short.
+
+5.
+Help fix mistakes.
+
+6.
+Only confirm answers
+after student works.
+
+7.
+Never reveal full
+solution immediately.
+
+8.
+After helping,
+recommend:
+
+• One YouTube lesson
+
+• One educational site
+
+Prefer:
+
+Khan Academy
+
+Professor Leonard
+
+Organic Chemistry Tutor
+
+PatrickJMT
+
 """
 
-
-formatted_messages.append({
-    "role": "system",
-    "content": system_message
-})
+# ==========================================
+# CHAT HISTORY
+# ==========================================
 
 for msg in st.session_state.messages:
-    formatted_messages.append(msg)
+
+    with st.chat_message(
+        msg["role"]
+    ):
+
+        st.markdown(
+            msg["content"]
+        )
+
+# ==========================================
+# TOOLBAR
+# ==========================================
+
+st.write(
+"### 🛠️ Math Input Helper"
+)
+
+st.markdown("""
+`^`
+`√`
+`π`
+`θ`
+`×`
+`÷`
+`∫`
+`Δ`
+""")
+
+col1,col2,col3=st.columns(3)
+
+if col1.button(
+"📐 Exponent"
+):
+    st.session_state.chat_bar=(
+    "Help simplify x^3*x^2"
+)
+
+if col2.button(
+"🔍 Radical"
+):
+    st.session_state.chat_bar=(
+    "Guide me through √32"
+)
+
+if col3.button(
+"📈 Derivative"
+):
+    st.session_state.chat_bar=(
+    "Help find derivative"
+)
+
+# ==========================================
+# USER INPUT
+# ==========================================
+
+user_query=st.chat_input(
+"Ask a question...",
+key="chat_bar"
+)
+
+if user_query:
+
+    st.session_state.messages.append(
+        {
+            "role":"user",
+            "content":user_query
+        }
+    )
+
+    context=""
+
+    keywords=[
+
+        "benedict",
+        "housing",
+        "registrar",
+        "financial aid",
+        "president",
+        "email",
+        "phone",
+        "admissions"
+
+    ]
+
+    if any(
+        k in user_query.lower()
+        for k in keywords
+    ):
+
+        context=search_benedict(
+            user_query
+        )
+
+    system_message=SYSTEM_INSTRUCTION
+
+    if context:
+
+        system_message+=(
+            "\n\nVerified Records:\n"
+            +context
+        )
+
+    formatted_messages=[
+
+        {
+            "role":"system",
+            "content":system_message
+        }
+
+    ]
+
+    formatted_messages.extend(
+        st.session_state.messages
+    )
+
+    with st.chat_message(
+        "assistant"
+    ):
+
+        output=st.empty()
+
+        final=""
+
+        try:
+
+            client=Groq(
+
+                api_key=
+                st.secrets[
+                    "GROQ_API_KEY"
+                ]
+
+            )
+
+            stream=(
+                client
+                .chat
+                .completions
+                .create(
+
+                    model=
+                    "llama-3.3-70b-versatile",
+
+                    messages=
+                    formatted_messages,
+
+                    temperature=.6,
+
+                    stream=True
+
+                )
+            )
+
+            for chunk in stream:
+
+                text=(
+                    chunk
+                    .choices[0]
+                    .delta.content
+                )
+
+                if text:
+
+                    final+=text
+
+                    output.markdown(
+                        final+"▌"
+                    )
+
+            output.markdown(
+                final
+            )
+
+            st.session_state.messages.append(
+                {
+                    "role":
+                    "assistant",
+
+                    "content":
+                    final
+                }
+            )
+
+            links=(
+                get_learning_resources(
+                    user_query
+                )
+            )
+
+            if links:
+
+                st.write("---")
+
+                st.subheader(
+                    "🎥 Continue Learning"
+                )
+
+                st.markdown(
+                    f"""
+▶ [Watch Lesson]
+({links['video']})
+
+📚 [Practice]
+({links['site']})
+"""
+                )
+
+        except Exception as e:
+
+            st.error(
+                "API Error"
+            )
+
+            st.code(
+                str(e)
+            )
 ```
