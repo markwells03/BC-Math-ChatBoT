@@ -79,11 +79,22 @@ with st.sidebar:
         st.session_state.language = "English"
 
     # 2. Use the session state variable to control the radio
-    language = st.radio(
-        "🌍 Choose Language",
-        ["English", "Español", "Français"],
-        key="language"  # Using a key here is crucial for persistence
+    st.radio(
+    "🌍 Choose Language",
+    ["English", "Español", "Français"],
+    key="language"
     )
+
+    previous_language = st.session_state.get(
+    "previous_language",
+    st.session_state.language
+    )
+
+if previous_language != st.session_state.language:
+    st.session_state.messages = []
+    st.session_state.previous_language = st.session_state.language
+    st.rerun()
+
 
     st.write("---")
 
@@ -111,13 +122,13 @@ captions = {
 LANGUAGE_PROMPT = {
 
     "English":
-    "Respond entirely in English.",
+    "You MUST respond ONLY in English.",
 
     "Español":
-    "Respond entirely in Spanish.",
+    "Debes responder ÚNICAMENTE en español.",
 
     "Français":
-    "Respond entirely in French."
+    "Vous devez répondre UNIQUEMENT en français."
 
 }
 
@@ -253,25 +264,21 @@ key="chat_bar"
 
 
     formatted_messages = [
-
         {
-
             "role": "system",
-
             "content": final_prompt
-
         }
-
     ]
 
-    formatted_messages.extend(
-        st.session_state.messages
-    )
+    for msg in st.session_state.messages:
+    formatted_messages.append({
+        "role": msg["role"],
+        "content": msg["content"]
+    })
 
     with st.chat_message(
         "assistant"
     ):
-
         placeholder=(
             st.empty()
         )
