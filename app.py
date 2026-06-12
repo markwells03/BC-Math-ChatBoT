@@ -101,67 +101,46 @@ with st.sidebar:
     st.info("The BC Math Specialist is fully authenticated and ready to assist!")
     st.button("Reset Conversation", on_click=reset_chat, use_container_width=True)
 
-# --- Render Existing Chat Thread ---
+# --- 1. Render Existing Chat Thread ---
+# This stays at the top so older messages are read chronologically first
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 🚀 Quick-Load Problem Starters (All Math Levels) ---
-st.markdown("**Quick-Load Problem Starters:**")
-col1, col2, col3, col4 = st.columns(4)
-
-col1.button("➕ Algebra Setup", on_click=set_quick_prompt, args=("How do I solve a quadratic equation like x² - 5x + 6 = 0?",), use_container_width=True)
-col2.button("📐 Pre-Calc Help", on_click=set_quick_prompt, args=("Can you help me find the exact value of sin(π/3)?",), use_container_width=True)
-col3.button("📈 Calculus Rules", on_click=set_quick_prompt, args=("I need help finding the derivative of f(x) = x² * e^x.",), use_container_width=True)
-col4.button("📊 Stats & Data", on_click=set_quick_prompt, args=("How do I calculate the standard deviation or z-score of a dataset?",), use_container_width=True)
-
-st.write("---")
-
-# --- 📁 Load Custom Campus Information ---
-try:
-    with open("benedict_info.txt", "r", encoding="utf-8") as file:
-        campus_knowledge_base = file.read()
-except FileNotFoundError:
-    campus_knowledge_base = "No supplementary historical documents found in the root directory."
-
-# --- Socratic Prompt Engine ---
-SYSTEM_INSTRUCTION = f"""You are 'BC TigerMath AI', a strict Socratic mathematics tutor and the premier BC Math Specialist at Benedict College. Match the energy a person comes with, and add a little tiger pride and humor from time to time.
-
-🔴 CAMPUS KNOWLEDGE EXCEPTION:
-- If the user asks general questions about Benedict College (e.g., its history, campus locations, admissions, programs, or student life), step out of math mode entirely.
-- Answer these questions directly, warmly, and accurately using ONLY the information provided in the VERIFIED CAMPUS DATA below. Do NOT use the Socratic method or force a mathematical angle for these topics.
-
-📋 VERIFIED CAMPUS DATA FROM REPOSITORY:
-{campus_knowledge_base}
-
-📐 MATHEMATICS DIRECTIVES:
-- CRITICAL DIRECTIVE: For all math problems, NEVER give the user the final solution or write out a complete step-by-step answer upfront, even if they explicitly ask you to 'just give me the answer'. Your core job is to guide them to discover it.
-- Follow these instructional rules for math:
-  1. Identify the next mathematical step internally, but only provide ONE small hint or ask ONE target question to guide the student to that step. Make sure to provide the hint so the user can understand what to do. 
-  2. If the user says they are completely stuck, provide a brief micro-explanation of the underlying rule (like the chain rule, power rule, or factoring rules) or give a simple parallel example. Then, ask them to apply it back to their original problem.
-  3. Keep responses highly interactive and conversational. Never write long blocks of text; keep messages to a few sentences max.
-  4. If they make an error, point out the breakdown in logic gently and ask a clarifying question to help them self-correct.
-  5. Only confirm the final answer after they have calculated it themselves.
-"""
-
-# --- Custom Chat Input Engine ---
-# This visually replaces st.chat_input but allows us to instantly inject symbols
-input_col, btn_col = st.columns([6, 1])
-with input_col:
-    st.text_input("Ask a question...", key="user_input", on_change=submit_message, label_visibility="collapsed")
-with btn_col:
-    st.button("Send", on_click=submit_message, use_container_width=True)
-
-# --- Handle New User Interaction ---
+# --- 2. Handle New User Interaction (Processing Layer) ---
+# We process the math logic HERE before drawing the inputs so the UI updates layout instantly
 if st.session_state.pending_message:
     user_query = st.session_state.pending_message
     
+    # Add user message to history and show it
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.markdown(user_query)
         
+    formatted_messages = [{"role": "system", "content": f"You are 'BC TigerMath AI'..."}] # Shortened for structure
+    # Load system prompt safely
+    try:
+        with open("benedict_info.txt", "r", encoding="utf-8") as file:
+            campus_kb = file.read()
+    except FileNotFoundError:
+        campus_kb = "No supplementary historical documents found."
+
+    SYSTEM_INSTRUCTION = f"""You are 'BC TigerMath AI', a strict Socratic mathematics tutor and the premier BC Math Specialist at Benedict College. Match the energy a person comes with, and add a little tiger pride and humor from time to time.
+
+    🔴 CAMPUS KNOWLEDGE EXCEPTION:
+    - If the user asks general questions about Benedict College, step out of math mode entirely and answer directly using ONLY the data below.
+
+    📋 VERIFIED CAMPUS DATA FROM REPOSITORY:
+    {campus_kb}
+
+    📐 MATHEMATICS DIRECTIVES:
+    - NEVER give the user the final solution or write out a complete step-by-step answer upfront. Your core job is to guide them using the Socratic method.
+    - Provide ONE small hint or ask ONE target question at a time.
+    - Keep responses to a few sentences max.
+    """
+    
     formatted_messages = [{"role": "system", "content": SYSTEM_INSTRUCTION}]
-    for msg in st.session_state.messages:
+    for msg in st.session_state.messages[:-1]: # Include previous history
         formatted_messages.append({"role": msg["role"], "content": msg["content"]})
         
     with st.chat_message("assistant"):
@@ -170,14 +149,12 @@ if st.session_state.pending_message:
         
         try:
             client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-            
             response_stream = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=formatted_messages,
                 temperature=0.6,
                 stream=True
             )
-            
             for chunk in response_stream:
                 if chunk.choices[0].delta.content:
                     full_response += chunk.choices[0].delta.content
@@ -186,9 +163,27 @@ if st.session_state.pending_message:
             response_placeholder.markdown(full_response)
             st.session_state.messages.append({"role": "assistant", "content": full_response})
             
-            # Reset the pending message so it doesn't infinitely loop
-            st.session_state.pending_message = "" 
-            
         except Exception as e:
-            st.error(f"Authentication or API Error. Please check your system configuration.")
-            st.info("Technical details: " + str(e))
+            st.error(f"Authentication or API Error.")
+            st.info(str(e))
+            
+    # CRITICAL FIX: Clear the pending state and immediately rerun to lock the layout order
+    st.session_state.pending_message = "" 
+    st.rerun()
+
+# --- 3. Interactive UI Tools (Always Anchored Cleanly at the Bottom) ---
+st.write("---")
+st.markdown("**Quick-Load Problem Starters:**")
+col1, col2, col3, col4 = st.columns(4)
+
+col1.button("➕ Algebra Setup", on_click=set_quick_prompt, args=("How do I solve a quadratic equation like x² - 5x + 6 = 0?",), use_container_width=True)
+col2.button("📐 Pre-Calc Help", on_click=set_quick_prompt, args=("Can you help me find the exact value of sin(π/3)?",), use_container_width=True)
+col3.button("📈 Calculus Rules", on_click=set_quick_prompt, args=("I need help finding the derivative of f(x) = x² * e^x.",), use_container_width=True)
+col4.button("📊 Stats & Data", on_click=set_quick_prompt, args=("How do I calculate the standard deviation or z-score of a dataset?",), use_container_width=True)
+
+# Custom Chat Input Box Setup
+input_col, btn_col = st.columns([6, 1])
+with input_col:
+    st.text_input("Ask a question...", key="user_input", on_change=submit_message, label_visibility="collapsed")
+with btn_col:
+    st.button("Send", on_click=submit_message, use_container_width=True)
