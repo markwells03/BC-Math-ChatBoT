@@ -99,20 +99,34 @@ with st.sidebar:
         st.session_state.chat_bar = ""
         st.rerun()
 
+```python
 # =====================================
 # LANGUAGE SUPPORT
 # =====================================
 
-captions={
+captions = {
 
-"English":
-"Your Campus BC Math Specialist",
+    "English":
+    "Your Campus BC Math Specialist",
 
-"Español":
-"Tu Especialista Matemático BC",
+    "Español":
+    "Tu Especialista Matemático BC",
 
-"Français":
-"Votre spécialiste mathématique BC"
+    "Français":
+    "Votre spécialiste mathématique BC"
+
+}
+
+LANGUAGE_PROMPT = {
+
+    "English":
+    "Respond entirely in English.",
+
+    "Español":
+    "Respond entirely in Spanish.",
+
+    "Français":
+    "Respond entirely in French."
 
 }
 
@@ -123,214 +137,60 @@ captions={
 st.title("🐅 BC TigerMath AI")
 
 st.caption(
-captions[language]
+    captions[language]
 )
-
-# =====================================
-# LOAD BENEDICT DOC
-# =====================================
-
-def load_benedict_doc():
-
-    try:
-
-        doc=Document(
-            "benedict_info.docx"
-        )
-
-        lines=[]
-
-        for p in doc.paragraphs:
-
-            text=p.text.strip()
-
-            if text:
-
-                lines.append(
-                    text
-                )
-
-        return lines
-
-    except:
-
-        return []
-
-BENEDICT_DATA=(
-load_benedict_doc()
-)
-
-# =====================================
-# SEARCH DOC
-# =====================================
-
-def search_benedict(
-query
-):
-
-    query=query.lower()
-
-    results=[]
-
-    for line in BENEDICT_DATA:
-
-        if any(
-
-            word
-            in
-            line.lower()
-
-            for word
-            in
-            query.split()
-
-        ):
-
-            results.append(
-                line
-            )
-
-    return "\n".join(
-        results[:20]
-    )
-
-# =====================================
-# CHAT HISTORY
-# =====================================
-
-for message in st.session_state.messages:
-
-    with st.chat_message(
-        message["role"]
-    ):
-
-        st.markdown(
-            message["content"]
-        )
-
-# =====================================
-# MATH TOOLBAR
-# =====================================
-
-st.write(
-"### 🛠️ Math Input Helper"
-)
-
-st.markdown("""
-`^`
-`√`
-`π`
-`θ`
-`×`
-`÷`
-`∫`
-`Δ`
-""")
-
-col1,col2,col3=(
-st.columns(3)
-)
-
-if col1.button(
-"📐 Exponent"
-):
-    st.session_state.chat_bar=(
-    "Help simplify x^3*x^2"
-)
-
-if col2.button(
-"🔍 Radical"
-):
-    st.session_state.chat_bar=(
-    "Help solve √32"
-)
-
-if col3.button(
-"📈 Derivative"
-):
-    st.session_state.chat_bar=(
-    "Help find derivative"
-)
-
-LANGUAGE_PROMPT = {
-
-"English":
-"Respond entirely in English.",
-
-"Español":
-"Respond entirely in Spanish.",
-
-"Français":
-"Respond entirely in French."
-
-}
 
 # =====================================
 # SYSTEM PROMPT
 # =====================================
 
-SYSTEM_INSTRUCTION=f"""
+SYSTEM_INSTRUCTION = f"""
 
 You are BC TigerMath AI.
 
-{language_prompt[language]}
+{LANGUAGE_PROMPT[language]}
 
 You are:
 
-1.
-A Socratic Math Tutor
+1. A Socratic Mathematics Tutor
 
-2.
-A Benedict College
-Information Assistant
+2. A Benedict College Information Assistant
 
 BENEDICT RULES:
 
-Answer Benedict
-questions directly.
+If asked about Benedict College:
 
-Never use Socratic
-teaching for Benedict.
+Answer directly.
 
-Only use verified
-records.
+Do NOT use Socratic teaching.
 
-If missing say:
+Only use verified Benedict records.
 
-I don't see that
-in my Benedict
-records.
+If unavailable say:
+
+'I don't see that in my Benedict records.'
 
 MATH RULES:
 
 Start with:
 
 Rule Used:
-
 Formula:
-
 Why It Applies:
 
-Then:
-
-Give ONE hint.
+Then provide ONE hint.
 
 Keep answers short.
 
-Never reveal
-full solution.
+Never reveal full solutions.
 
-Only confirm
-answer after
-student solves.
+Only confirm after the student solves.
 
-If student
-is stuck:
-
-Give a tiny
-explanation.
+If stuck:
+Give a tiny explanation.
 
 """
+```
 
 # =====================================
 # INPUT
