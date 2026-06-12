@@ -1,10 +1,11 @@
+```python
 import streamlit as st
 from groq import Groq
 from docx import Document
 
-# ==========================================
-# PAGE CONFIG
-# ==========================================
+# =====================================
+# PAGE SETUP
+# =====================================
 
 st.set_page_config(
     page_title="BC TigerMath AI",
@@ -12,16 +13,16 @@ st.set_page_config(
     layout="centered"
 )
 
-# ==========================================
-# CUSTOM STYLING
-# ==========================================
+# =====================================
+# CUSTOM STYLE
+# =====================================
 
 st.markdown("""
 <style>
 
 h1{
 color:#FFD700!important;
-font-family:'Arial Black';
+font-family:'Arial Black',sans-serif;
 }
 
 .stCaption{
@@ -54,26 +55,43 @@ border-radius:12px;
 </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# HEADER
-# ==========================================
+# =====================================
+# SESSION STATE
+# =====================================
 
-st.title("🐅 BC TigerMath AI")
-st.caption(
-"Your Campus BC Math Specialist | Powered by Groq"
-)
+if "messages" not in st.session_state:
+    st.session_state.messages=[]
 
-# ==========================================
+if "chat_bar" not in st.session_state:
+    st.session_state.chat_bar=""
+
+# =====================================
 # SIDEBAR
-# ==========================================
+# =====================================
 
 with st.sidebar:
 
     st.header("Control Panel")
 
-    st.success(
+    st.info(
         "BC Math Specialist Ready"
     )
+
+    st.write("---")
+
+    language=st.radio(
+
+        "🌍 Language",
+
+        [
+            "English",
+            "Español",
+            "Français"
+        ]
+
+    )
+
+    st.write("---")
 
     if st.button(
         "Reset Conversation",
@@ -82,215 +100,135 @@ with st.sidebar:
 
         st.session_state.messages=[]
 
+        st.session_state.chat_bar=""
+
         st.rerun()
 
-# ==========================================
-# SESSION STATE
-# ==========================================
+# =====================================
+# LANGUAGE SUPPORT
+# =====================================
 
-if "messages" not in st.session_state:
-    st.session_state.messages=[]
+captions={
 
-if "chat_bar" not in st.session_state:
-    st.session_state.chat_bar=""
+"English":
+"Your Campus BC Math Specialist",
 
-# ==========================================
-# BENEDICT DOC SEARCH
-# ==========================================
+"Español":
+"Tu Especialista Matemático BC",
+
+"Français":
+"Votre spécialiste mathématique BC"
+
+}
+
+language_prompt={
+
+"English":
+"Respond only in English.",
+
+"Español":
+"Respond only in Spanish.",
+
+"Français":
+"Respond only in French."
+
+}
+
+# =====================================
+# TITLE
+# =====================================
+
+st.title("🐅 BC TigerMath AI")
+
+st.caption(
+captions[language]
+)
+
+# =====================================
+# LOAD BENEDICT DOC
+# =====================================
 
 def load_benedict_doc():
 
     try:
 
-        doc=Document("benedict_info.docx")
+        doc=Document(
+            "benedict_info.docx"
+        )
 
-        return [
-            p.text.strip()
-            for p in doc.paragraphs
-            if p.text.strip()
-        ]
+        lines=[]
+
+        for p in doc.paragraphs:
+
+            text=p.text.strip()
+
+            if text:
+
+                lines.append(
+                    text
+                )
+
+        return lines
 
     except:
 
         return []
 
-BENEDICT_DATA=load_benedict_doc()
+BENEDICT_DATA=(
+load_benedict_doc()
+)
 
-def search_benedict(query):
+# =====================================
+# SEARCH DOC
+# =====================================
 
-    matches=[]
+def search_benedict(
+query
+):
+
+    query=query.lower()
+
+    results=[]
 
     for line in BENEDICT_DATA:
 
         if any(
-            word.lower()
-            in line.lower()
 
-            for word in query.split()
+            word
+            in
+            line.lower()
+
+            for word
+            in
+            query.split()
+
         ):
 
-            matches.append(line)
+            results.append(
+                line
+            )
 
-    return "\n".join(matches[:15])
+    return "\n".join(
+        results[:20]
+    )
 
-# ==========================================
-# LEARNING RESOURCE ENGINE
-# ==========================================
-
-def get_learning_resources(text):
-
-    text=text.lower()
-
-    resources={
-
-        "trig":{
-            "video":
-            "https://www.youtube.com/watch?v=LwCRRUa8yTU",
-
-            "site":
-            "https://www.khanacademy.org/math/trigonometry"
-        },
-
-        "derivative":{
-            "video":
-            "https://www.youtube.com/watch?v=ANyVpMS3HL4",
-
-            "site":
-            "https://www.khanacademy.org/math/differential-calculus"
-        },
-
-        "integral":{
-            "video":
-            "https://www.youtube.com/@ProfessorLeonard",
-
-            "site":
-            "https://www.khanacademy.org/math/integral-calculus"
-        },
-
-        "algebra":{
-            "video":
-            "https://www.youtube.com/@TheOrganicChemistryTutor",
-
-            "site":
-            "https://www.khanacademy.org/math/algebra"
-        },
-
-        "calculus":{
-            "video":
-            "https://www.youtube.com/@ProfessorLeonard",
-
-            "site":
-            "https://www.khanacademy.org/math/calculus-1"
-        }
-
-    }
-
-    for topic in resources:
-
-        if topic in text:
-
-            return resources[topic]
-
-    return None
-
-# ==========================================
-# SYSTEM PROMPT
-# ==========================================
-
-SYSTEM_INSTRUCTION="""
-
-You are BC TigerMath AI.
-
-ROLE 1:
-Socratic mathematics tutor.
-
-ROLE 2:
-Information assistant for Benedict College.
-
-BENEDICT RULE:
-If asked about Benedict College:
-
-Answer directly.
-
-Do not use Socratic teaching.
-
-Only use verified Benedict records.
-
-Never invent data.
-
-If unavailable say:
-
-'I don't see that in my Benedict records.'
-
-MATH RULES:
-
-1.
-Show:
-
-Rule Used:
-
-Formula:
-
-Why It Applies:
-
-2.
-Give ONE hint.
-
-3.
-If stuck:
-Explain briefly.
-
-4.
-Keep answers short.
-
-5.
-Help fix mistakes.
-
-6.
-Only confirm answers
-after student works.
-
-7.
-Never reveal full
-solution immediately.
-
-8.
-After helping,
-recommend:
-
-• One YouTube lesson
-
-• One educational site
-
-Prefer:
-
-Khan Academy
-
-Professor Leonard
-
-Organic Chemistry Tutor
-
-PatrickJMT
-
-"""
-
-# ==========================================
+# =====================================
 # CHAT HISTORY
-# ==========================================
+# =====================================
 
-for msg in st.session_state.messages:
+for message in st.session_state.messages:
 
     with st.chat_message(
-        msg["role"]
+        message["role"]
     ):
 
         st.markdown(
-            msg["content"]
+            message["content"]
         )
 
-# ==========================================
-# TOOLBAR
-# ==========================================
+# =====================================
+# MATH TOOLBAR
+# =====================================
 
 st.write(
 "### 🛠️ Math Input Helper"
@@ -307,7 +245,9 @@ st.markdown("""
 `Δ`
 """)
 
-col1,col2,col3=st.columns(3)
+col1,col2,col3=(
+st.columns(3)
+)
 
 if col1.button(
 "📐 Exponent"
@@ -320,7 +260,7 @@ if col2.button(
 "🔍 Radical"
 ):
     st.session_state.chat_bar=(
-    "Guide me through √32"
+    "Help solve √32"
 )
 
 if col3.button(
@@ -330,62 +270,151 @@ if col3.button(
     "Help find derivative"
 )
 
-# ==========================================
-# USER INPUT
-# ==========================================
+# =====================================
+# SYSTEM PROMPT
+# =====================================
 
-user_query=st.chat_input(
+SYSTEM_INSTRUCTION=f"""
+
+You are BC TigerMath AI.
+
+{language_prompt[language]}
+
+You are:
+
+1.
+A Socratic Math Tutor
+
+2.
+A Benedict College
+Information Assistant
+
+BENEDICT RULES:
+
+Answer Benedict
+questions directly.
+
+Never use Socratic
+teaching for Benedict.
+
+Only use verified
+records.
+
+If missing say:
+
+I don't see that
+in my Benedict
+records.
+
+MATH RULES:
+
+Start with:
+
+Rule Used:
+
+Formula:
+
+Why It Applies:
+
+Then:
+
+Give ONE hint.
+
+Keep answers short.
+
+Never reveal
+full solution.
+
+Only confirm
+answer after
+student solves.
+
+If student
+is stuck:
+
+Give a tiny
+explanation.
+
+"""
+
+# =====================================
+# INPUT
+# =====================================
+
+if user_query:=st.chat_input(
 "Ask a question...",
 key="chat_bar"
-)
+):
 
-if user_query:
+    st.session_state.messages.append({
 
-    st.session_state.messages.append(
-        {
-            "role":"user",
-            "content":user_query
-        }
-    )
+        "role":"user",
+
+        "content":
+        user_query
+
+    })
 
     context=""
 
     keywords=[
 
         "benedict",
+        "admissions",
         "housing",
         "registrar",
         "financial aid",
         "president",
         "email",
         "phone",
-        "admissions"
+        "contact"
 
     ]
 
     if any(
-        k in user_query.lower()
-        for k in keywords
+
+        word
+        in
+        user_query.lower()
+
+        for word
+        in
+        keywords
+
     ):
 
-        context=search_benedict(
-            user_query
+        context=(
+            search_benedict(
+                user_query
+            )
         )
 
-    system_message=SYSTEM_INSTRUCTION
+    final_prompt=(
+        SYSTEM_INSTRUCTION
+    )
 
     if context:
 
-        system_message+=(
-            "\n\nVerified Records:\n"
-            +context
+        final_prompt+=(
+
+            "\n\n"
+
+            +
+
+            context
+
         )
 
     formatted_messages=[
 
         {
-            "role":"system",
-            "content":system_message
+
+        "role":
+        "system",
+
+        "content":
+        final_prompt
+
         }
 
     ]
@@ -398,15 +427,18 @@ if user_query:
         "assistant"
     ):
 
-        output=st.empty()
+        placeholder=(
+            st.empty()
+        )
 
-        final=""
+        answer=""
 
         try:
 
             client=Groq(
 
                 api_key=
+
                 st.secrets[
                     "GROQ_API_KEY"
                 ]
@@ -425,7 +457,8 @@ if user_query:
                     messages=
                     formatted_messages,
 
-                    temperature=.6,
+                    temperature=
+                    0.6,
 
                     stream=True
 
@@ -434,57 +467,36 @@ if user_query:
 
             for chunk in stream:
 
-                text=(
+                delta=(
                     chunk
                     .choices[0]
-                    .delta.content
+                    .delta
+                    .content
                 )
 
-                if text:
+                if delta:
 
-                    final+=text
+                    answer+=delta
 
-                    output.markdown(
-                        final+"▌"
+                    placeholder.markdown(
+                        answer
+                        +
+                        "▌"
                     )
 
-            output.markdown(
-                final
+            placeholder.markdown(
+                answer
             )
 
-            st.session_state.messages.append(
-                {
-                    "role":
-                    "assistant",
+            st.session_state.messages.append({
 
-                    "content":
-                    final
-                }
-            )
+                "role":
+                "assistant",
 
-            links=(
-                get_learning_resources(
-                    user_query
-                )
-            )
+                "content":
+                answer
 
-            if links:
-
-                st.write("---")
-
-                st.subheader(
-                    "🎥 Continue Learning"
-                )
-
-                st.markdown(
-                    f"""
-▶ [Watch Lesson]
-({links['video']})
-
-📚 [Practice]
-({links['site']})
-"""
-                )
+            })
 
         except Exception as e:
 
