@@ -46,73 +46,72 @@ st.markdown("""
 st.title("🐅 BC TigerMath AI")
 st.caption("Your Campus BC Math Specialist | Created by Mark Wells and Jamazio Mcphee")
 
-# --- Sidebar: Cleaned Up Control Panel ---
+# --- Initialize Local Chat History & Input Buffers ---
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# --- Sidebar: Equation Builder & Control Panel ---
 with st.sidebar:
+    st.header("🧮 Equation Builder")
+    st.caption("Build your expression here, then copy it to the chat!")
+    
+    # 1. Setup the session state for our equation builder
+    if "equation_draft" not in st.session_state:
+        st.session_state.equation_draft = ""
+
+    # 2. Callbacks to modify the text input programmatically
+    def add_symbol(sym):
+        st.session_state.equation_draft += sym
+
+    def clear_equation():
+        st.session_state.equation_draft = ""
+
+    # 3. Render the Composer Input Box and a Clear button
+    draft_col, clear_col = st.columns([4, 1])
+    with draft_col:
+        # Tying the text_input to 'equation_draft' syncs it perfectly with the buttons
+        st.text_input("Equation Composer:", key="equation_draft", label_visibility="collapsed")
+    with clear_col:
+        st.button("❌", on_click=clear_equation, use_container_width=True)
+
+    # 4. Math Level Tabs (Shortened titles to fit sidebar)
+    math_tabs = st.tabs(["➕ Alg", "📈 Calc", "📊 Stat", "📐 Trig"])
+
+    # Helper function to generate clean button grids (Adjusted to 4 columns for narrower sidebar)
+    def render_symbol_grid(symbols, prefix):
+        cols = st.columns(4)
+        for i, sym in enumerate(symbols):
+            with cols[i % 4]:
+                st.button(sym, key=f"{prefix}_sym_{i}", on_click=add_symbol, args=(sym,), use_container_width=True)
+
+    with math_tabs[0]: # Algebra & Basic Math
+        render_symbol_grid(['+', '-', '×', '÷', '=', '≠', 'x²', 'x³', 'xⁿ', '√', '∛', '()', '[]', '|x|', '∞', '½'], "alg")
+
+    with math_tabs[1]: # Calculus
+        render_symbol_grid(['∫', '∬', '∭', '∮', '∂', 'd/dx', 'lim', '∑', '∏', 'Δ', '∇', 'e', 'ln', 'log', 'dx', 'dy'], "calc")
+
+    with math_tabs[2]: # Statistics
+        render_symbol_grid(['μ', 'σ', 'σ²', 'x̄', 'p̂', 'χ²', 'ρ', 'Z', 'T', 'P()', 'E()', 'Var()', '∩', '∪', '!', '≈'], "stat")
+
+    with math_tabs[3]: # Trig & Sets
+        render_symbol_grid(['π', 'θ', 'α', 'β', 'γ', 'sin', 'cos', 'tan', '∈', '∉', '⊂', '⊆', 'Ø', '°', '∠', '△'], "trig")
+
+    st.write("---")
+    
+    # Standard Control Panel moved to bottom of sidebar
     st.header("Control Panel")
     st.info("The BC Math Specialist is fully authenticated and ready to assist!")
     
-    st.write("---")
     if st.button("Reset Conversation", use_container_width=True):
         st.session_state.messages = []
         if "chat_bar" in st.session_state:
             st.session_state.chat_bar = ""
         st.rerun()
 
-# --- Initialize Local Chat History & Input Buffers ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
 # --- Render Existing Chat Thread ---
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-
-# --- 🧮 Interactive Math Keyboard (Cengage-Style) ---
-st.write("### 🧮 Math Equation Builder")
-st.caption("Build your expression using the tabs below, then copy it into the chat bar!")
-
-# 1. Setup the session state for our equation builder
-if "equation_draft" not in st.session_state:
-    st.session_state.equation_draft = ""
-
-# 2. Callbacks to modify the text input programmatically
-def add_symbol(sym):
-    st.session_state.equation_draft += sym
-
-def clear_equation():
-    st.session_state.equation_draft = ""
-
-# 3. Render the Composer Input Box and a Clear button
-draft_col, clear_col = st.columns([5, 1])
-with draft_col:
-    # Tying the text_input to 'equation_draft' syncs it perfectly with the buttons
-    st.text_input("Equation Composer:", key="equation_draft", label_visibility="collapsed")
-with clear_col:
-    st.button("Clear ❌", on_click=clear_equation, use_container_width=True)
-
-# 4. Math Level Tabs (Breaking the "Calculus-Only" Perception)
-math_tabs = st.tabs(["➕ Algebra", "📈 Calculus", "📊 Statistics", "📐 Trig & Sets"])
-
-# Helper function to generate clean button grids
-def render_symbol_grid(symbols, prefix):
-    cols = st.columns(8)
-    for i, sym in enumerate(symbols):
-        with cols[i % 8]:
-            st.button(sym, key=f"{prefix}_sym_{i}", on_click=add_symbol, args=(sym,), use_container_width=True)
-
-with math_tabs[0]: # Algebra & Basic Math
-    render_symbol_grid(['+', '-', '×', '÷', '=', '≠', 'x²', 'x³', 'xⁿ', '√', '∛', '()', '[]', '|x|', '∞', '½'], "alg")
-
-with math_tabs[1]: # Calculus
-    render_symbol_grid(['∫', '∬', '∭', '∮', '∂', 'd/dx', 'lim', '∑', '∏', 'Δ', '∇', 'e', 'ln', 'log', 'dx', 'dy'], "calc")
-
-with math_tabs[2]: # Statistics
-    render_symbol_grid(['μ', 'σ', 'σ²', 'x̄', 'p̂', 'χ²', 'ρ', 'Z', 'T', 'P()', 'E()', 'Var()', '∩', '∪', '!', '≈'], "stat")
-
-with math_tabs[3]: # Trig & Sets
-    render_symbol_grid(['π', 'θ', 'α', 'β', 'γ', 'sin', 'cos', 'tan', '∈', '∉', '⊂', '⊆', 'Ø', '°', '∠', '△'], "trig")
-
-st.write("---")
 
 # --- 🚀 Quick-Load Problem Starters (All Math Levels) ---
 st.markdown("**Quick-Load Problem Starters:**")
