@@ -47,8 +47,6 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "user_input" not in st.session_state:
     st.session_state.user_input = ""
-if "pending_message" not in st.session_state:
-    st.session_state.pending_message = ""
 
 # --- Callback Functions ---
 def add_symbol(sym):
@@ -57,15 +55,9 @@ def add_symbol(sym):
 def set_quick_prompt(text):
     st.session_state.user_input = text
 
-def submit_message():
-    if "user_input" in st.session_state and st.session_state.user_input.strip() != "":
-        st.session_state.pending_message = st.session_state.user_input
-        st.session_state.user_input = ""
-
 def reset_chat():
     st.session_state.messages = []
     st.session_state.user_input = ""
-    st.session_state.pending_message = ""
 
 # --- Sidebar: Equation Builder & Control Panel ---
 with st.sidebar:
@@ -102,23 +94,40 @@ with st.sidebar:
     st.button("Reset Conversation", on_click=reset_chat, use_container_width=True)
 
 # --- 1. Render Existing Chat Thread ---
-# This stays at the top so older messages are read chronologically first
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# --- 2. Handle New User Interaction (Processing Layer) ---
-# We process the math logic HERE before drawing the inputs so the UI updates layout instantly
-if st.session_state.pending_message:
-    user_query = st.session_state.pending_message
+# --- 2. Interactive UI Tools (Always Anchored Cleanly at the Bottom) ---
+st.write("---")
+st.markdown("**Quick-Load Problem Starters:**")
+col1, col2, col3, col4 = st.columns(4)
+
+col1.button("➕ Algebra Setup", on_click=set_quick_prompt, args=("How do I solve a quadratic equation like x² - 5x + 6 = 0?",), use_container_width=True)
+col2.button("📐 Pre-Calc Help", on_click=set_quick_prompt, args=("Can you help me find the exact value of sin(π/3)?",), use_container_width=True)
+col3.button("📈 Calculus Rules", on_click=set_quick_prompt, args=("I need help finding the derivative of f(x) = x² * e^x.",), use_container_width=True)
+col4.button("📊 Stats & Data", on_click=set_quick_prompt, args=("How do I calculate the standard deviation or z-score of a dataset?",), use_container_width=True)
+
+# Custom Chat Input Box Setup
+# We use a form here to completely stop accidental submissions when clicking options!
+with st.form(key="chat_form", clear_on_submit=False):
+    input_col, btn_col = st.columns([6, 1])
+    with input_col:
+        user_query = st.text_input("Ask a question...", key="user_input", label_visibility="collapsed")
+    with btn_col:
+        submit_clicked = st.form_submit_button("Send", use_container_width=True)
+
+# --- 3. Handle Form Submission Processing Layer ---
+if submit_clicked and user_query.strip() != "":
     
     # Add user message to history and show it
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
         st.markdown(user_query)
         
-    formatted_messages = [{"role": "system", "content": f"You are 'BC TigerMath AI'..."}] # Shortened for structure
-    # Load system prompt safely
+    # Clear out input state for next input round
+    st.session_state.user_input = ""
+        
     try:
         with open("benedict_info.txt", "r", encoding="utf-8") as file:
             campus_kb = file.read()
@@ -140,8 +149,9 @@ if st.session_state.pending_message:
     """
     
     formatted_messages = [{"role": "system", "content": SYSTEM_INSTRUCTION}]
-    for msg in st.session_state.messages[:-1]: # Include previous history
+    for msg in st.session_state.messages[:-1]: 
         formatted_messages.append({"role": msg["role"], "content": msg["content"]})
+    formatted_messages.append({"role": "user", "content": user_query})
         
     with st.chat_message("assistant"):
         response_placeholder = st.empty()
@@ -167,23 +177,4 @@ if st.session_state.pending_message:
             st.error(f"Authentication or API Error.")
             st.info(str(e))
             
-    # CRITICAL FIX: Clear the pending state and immediately rerun to lock the layout order
-    st.session_state.pending_message = "" 
     st.rerun()
-
-# --- 3. Interactive UI Tools (Always Anchored Cleanly at the Bottom) ---
-st.write("---")
-st.markdown("**Quick-Load Problem Starters:**")
-col1, col2, col3, col4 = st.columns(4)
-
-col1.button("➕ Algebra Setup", on_click=set_quick_prompt, args=("How do I solve a quadratic equation like x² - 5x + 6 = 0?",), use_container_width=True)
-col2.button("📐 Pre-Calc Help", on_click=set_quick_prompt, args=("Can you help me find the exact value of sin(π/3)?",), use_container_width=True)
-col3.button("📈 Calculus Rules", on_click=set_quick_prompt, args=("I need help finding the derivative of f(x) = x² * e^x.",), use_container_width=True)
-col4.button("📊 Stats & Data", on_click=set_quick_prompt, args=("How do I calculate the standard deviation or z-score of a dataset?",), use_container_width=True)
-
-# Custom Chat Input Box Setup
-input_col, btn_col = st.columns([6, 1])
-with input_col:
-    st.text_input("Ask a question...", key="user_input", on_change=submit_message, label_visibility="collapsed")
-with btn_col:
-    st.button("Send", on_click=submit_message, use_container_width=True)
