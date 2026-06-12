@@ -51,7 +51,7 @@ UI_TEXT = {
         "ql_3_msg": "I need help finding the derivative of f(x) = x² * e^x.",
         "ql_4_btn": "📊 Stats & Data",
         "ql_4_msg": "How do I calculate the standard deviation or z-score of a dataset?",
-        "chat_placeholder": "Ask a math question...",
+        "chat_placeholder": "Hi there! What math problem can I help you with today? 🐅", # <--- UPDATED HERE
         "sys_prompt": "You MUST respond ONLY in English.",
         "error_msg": "Authentication or API Error. Please check your system configuration."
     },
@@ -73,7 +73,7 @@ UI_TEXT = {
         "ql_3_msg": "Necesito ayuda para encontrar la derivada de f(x) = x² * e^x.",
         "ql_4_btn": "📊 Estadística",
         "ql_4_msg": "¿Cómo calculo la desviación estándar o el valor z de un conjunto de datos?",
-        "chat_placeholder": "Haz una pregunta de matemáticas...",
+        "chat_placeholder": "¡Hola! ¿Con qué problema de matemáticas te puedo ayudar hoy? 🐅", # <--- UPDATED HERE
         "sys_prompt": "Debes responder ÚNICAMENTE en español.",
         "error_msg": "Error de API o autenticación. Verifica la configuración de tu sistema."
     },
@@ -95,7 +95,7 @@ UI_TEXT = {
         "ql_3_msg": "J'ai besoin d'aide pour trouver la dérivée de f(x) = x² * e^x.",
         "ql_4_btn": "📊 Statistiques",
         "ql_4_msg": "Comment calculer l'écart type ou le score z d'un ensemble de données ?",
-        "chat_placeholder": "Posez une question de mathématiques...",
+        "chat_placeholder": "Bonjour ! Avec quel problème de mathématiques puis-je vous aider aujourd'hui ? 🐅", # <--- UPDATED HERE
         "sys_prompt": "Vous devez répondre UNIQUEMENT en français.",
         "error_msg": "Erreur d'authentification ou d'API. Veuillez vérifier votre configuration."
     }
