@@ -36,46 +36,48 @@ st.markdown("""
     div[data-testid="stSidebar"] {
         background-color: #1A1A1A;
     }
+    div[data-testid="stChatInput"] {
+        border: 2px solid #4C145E !important;
+        border-radius: 12px;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 st.title("🐅 BC TigerMath AI")
 st.caption("Your Campus BC Math Specialist | Created by Mark Wells and Jamazio Mcphee")
 
-# --- Setup Global States ---
+# --- Initialize Local Chat History & Input Buffers ---
 if "messages" not in st.session_state:
     st.session_state.messages = []
-if "user_input" not in st.session_state:
-    st.session_state.user_input = ""
-if "pending_message" not in st.session_state:
-    st.session_state.pending_message = ""
-
-# --- Callback Functions ---
-def add_symbol(sym):
-    st.session_state.user_input += sym
-
-def set_quick_prompt(text):
-    st.session_state.user_input = text
-
-def submit_message():
-    if "user_input" in st.session_state and st.session_state.user_input.strip() != "":
-        st.session_state.pending_message = st.session_state.user_input
-        st.session_state.user_input = ""
-
-def reset_chat():
-    st.session_state.messages = []
-    st.session_state.user_input = ""
-    st.session_state.pending_message = ""
 
 # --- Sidebar: Equation Builder & Control Panel ---
 with st.sidebar:
     st.header("🧮 Equation Builder")
-    st.caption("Clicking these symbols will instantly type them into your chat box!")
+    st.caption("Build your expression here, then copy it to the chat!")
     
-    # Math Level Tabs 
+    # 1. Setup the session state for our equation builder
+    if "equation_draft" not in st.session_state:
+        st.session_state.equation_draft = ""
+
+    # 2. Callbacks to modify the text input programmatically
+    def add_symbol(sym):
+        st.session_state.equation_draft += sym
+
+    def clear_equation():
+        st.session_state.equation_draft = ""
+
+    # 3. Render the Composer Input Box and a Clear button
+    draft_col, clear_col = st.columns([4, 1])
+    with draft_col:
+        # Tying the text_input to 'equation_draft' syncs it perfectly with the buttons
+        st.text_input("Equation Composer:", key="equation_draft", label_visibility="collapsed")
+    with clear_col:
+        st.button("❌", on_click=clear_equation, use_container_width=True)
+
+    # 4. Math Level Tabs (Shortened titles to fit sidebar)
     math_tabs = st.tabs(["➕ Alg", "📈 Calc", "📊 Stat", "📐 Trig"])
 
-    # Helper function to generate clean button grids
+    # Helper function to generate clean button grids (Adjusted to 4 columns for narrower sidebar)
     def render_symbol_grid(symbols, prefix):
         cols = st.columns(4)
         for i, sym in enumerate(symbols):
@@ -96,10 +98,15 @@ with st.sidebar:
 
     st.write("---")
     
-    # Standard Control Panel 
+    # Standard Control Panel moved to bottom of sidebar
     st.header("Control Panel")
     st.info("The BC Math Specialist is fully authenticated and ready to assist!")
-    st.button("Reset Conversation", on_click=reset_chat, use_container_width=True)
+    
+    if st.button("Reset Conversation", use_container_width=True):
+        st.session_state.messages = []
+        if "chat_bar" in st.session_state:
+            st.session_state.chat_bar = ""
+        st.rerun()
 
 # --- Render Existing Chat Thread ---
 for message in st.session_state.messages:
@@ -110,10 +117,14 @@ for message in st.session_state.messages:
 st.markdown("**Quick-Load Problem Starters:**")
 col1, col2, col3, col4 = st.columns(4)
 
-col1.button("➕ Algebra Setup", on_click=set_quick_prompt, args=("How do I solve a quadratic equation like x² - 5x + 6 = 0?",), use_container_width=True)
-col2.button("📐 Pre-Calc Help", on_click=set_quick_prompt, args=("Can you help me find the exact value of sin(π/3)?",), use_container_width=True)
-col3.button("📈 Calculus Rules", on_click=set_quick_prompt, args=("I need help finding the derivative of f(x) = x² * e^x.",), use_container_width=True)
-col4.button("📊 Stats & Data", on_click=set_quick_prompt, args=("How do I calculate the standard deviation or z-score of a dataset?",), use_container_width=True)
+if col1.button("➕ Algebra Setup", use_container_width=True):
+    st.session_state.chat_bar = "How do I solve a quadratic equation like x² - 5x + 6 = 0?"
+if col2.button("📐 Pre-Calc Help", use_container_width=True):
+    st.session_state.chat_bar = "Can you help me find the exact value of sin(π/3)?"
+if col3.button("📈 Calculus Rules", use_container_width=True):
+    st.session_state.chat_bar = "I need help finding the derivative of f(x) = x² * e^x."
+if col4.button("📊 Stats & Data", use_container_width=True):
+    st.session_state.chat_bar = "How do I calculate the standard deviation or z-score of a dataset?"
 
 st.write("---")
 
@@ -142,19 +153,26 @@ SYSTEM_INSTRUCTION = f"""You are 'BC TigerMath AI', a strict Socratic mathematic
   3. Keep responses highly interactive and conversational. Never write long blocks of text; keep messages to a few sentences max.
   4. If they make an error, point out the breakdown in logic gently and ask a clarifying question to help them self-correct.
   5. Only confirm the final answer after they have calculated it themselves.
+
+  📚 LEARNING RESOURCE DIRECTIVE:
+
+* After helping a student complete a math problem or explaining a concept, recommend 1–3 related trusted learning resources.
+* For example:
+  • Khan Academy
+  • YouTube educational channels (e.g. Organic Chemistry Tutor, Professor Leonard, PatrickJMT)
+  • Desmos (for graphing)
+  • Paul's Online Math Notes
+* Match resources to the topic being discussed.
+* Format:
+  🔗 Further Practice:
+
+  * Resource Name: URL
+* Only recommend resources if they genuinely support learning.
+
 """
 
-# --- Custom Chat Input Engine ---
-# This visually replaces st.chat_input but allows us to instantly inject symbols
-input_col, btn_col = st.columns([6, 1])
-with input_col:
-    st.text_input("Ask a question...", key="user_input", on_change=submit_message, label_visibility="collapsed")
-with btn_col:
-    st.button("Send", on_click=submit_message, use_container_width=True)
-
 # --- Handle New User Interaction ---
-if st.session_state.pending_message:
-    user_query = st.session_state.pending_message
+if user_query := st.chat_input("Ask a question...", key="chat_bar"):
     
     st.session_state.messages.append({"role": "user", "content": user_query})
     with st.chat_message("user"):
@@ -185,9 +203,6 @@ if st.session_state.pending_message:
                     
             response_placeholder.markdown(full_response)
             st.session_state.messages.append({"role": "assistant", "content": full_response})
-            
-            # Reset the pending message so it doesn't infinitely loop
-            st.session_state.pending_message = "" 
             
         except Exception as e:
             st.error(f"Authentication or API Error. Please check your system configuration.")
