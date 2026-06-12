@@ -129,7 +129,7 @@ LANGUAGE_PROMPT = {
 st.title("🐅 BC TigerMath AI")
 
 st.caption(
-    captions[language]
+    captions[st.session_state.language]
 )
 
 # =====================================
@@ -140,7 +140,7 @@ SYSTEM_INSTRUCTION = f"""
 
 You are BC TigerMath AI.
 
-{LANGUAGE_PROMPT[language]}
+{LANGUAGE_PROMPT[st.session_state.language]}
 
 You are:
 
