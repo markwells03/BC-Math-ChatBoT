@@ -70,31 +70,26 @@ if "chat_bar" not in st.session_state:
 
 with st.sidebar:
     st.header("Control Panel")
-    
-    st.info("The BC Math Specialist is fully authenticated and ready to assist!")
+
+    st.info(
+        "The BC Math Specialist is fully authenticated and ready to assist!"
+    )
+
     st.write("---")
 
-    # 1. Initialize session state for language if it doesn't exist
     if "language" not in st.session_state:
         st.session_state.language = "English"
 
-    # 2. Use the session state variable to control the radio
     st.radio(
-    "🌍 Choose Language",
-    ["English", "Español", "Français"],
-    key="language"
+        "🌍 Choose Language",
+        ["English", "Español", "Français"],
+        key="language"
     )
 
-    previous_language = st.session_state.get(
-    "previous_language",
-    st.session_state.language
+    # SHOW CURRENT LANGUAGE
+    st.success(
+        f"Current Language: {st.session_state.language}"
     )
-
-if previous_language != st.session_state.language:
-    st.session_state.messages = []
-    st.session_state.previous_language = st.session_state.language
-    st.rerun()
-
 
     st.write("---")
 
