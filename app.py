@@ -187,7 +187,7 @@ If stuck:
 Give a tiny explanation.
 
 """
-```
+
 
 # =====================================
 # INPUT
@@ -354,4 +354,4 @@ key="chat_bar"
             st.code(
                 str(e)
             )
-```
+
