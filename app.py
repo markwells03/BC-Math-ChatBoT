@@ -34,7 +34,7 @@ st.markdown("""
 # --- 2. Multi-Language UI Dictionary ---
 UI_TEXT = {
     "English": {
-        "caption": "Your Campus BC Math Specialist | Created by Mark Wells and Jamazio Mcphee",
+        "caption": "Your Campus Benedict Math Specialist | Created by Mark Wells and Jamazio Mcphee",
         "lang_prompt": "🌍 Select Your Language",
         "eq_header": "🧮 Equation Builder",
         "eq_caption": "Build your expression here, then copy it to the chat!",
